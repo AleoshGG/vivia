@@ -1,47 +1,66 @@
 package aleosh.online.vivia.features.auth.services.impl;
 
+import aleosh.online.vivia.features.users.lessee.domain.entities.Lessee;
+import aleosh.online.vivia.features.users.lessee.domain.repositories.ILesseeRepository;
 import aleosh.online.vivia.features.users.lessor.domain.entities.Lessor;
 import aleosh.online.vivia.features.users.lessor.domain.repositories.ILessorRepository;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final ILessorRepository userRepository;
+    private final ILessorRepository lessorRepository;
+    private final ILesseeRepository lesseeRepository;
 
-    public UserDetailsServiceImpl(ILessorRepository userRepository) {
-        this.userRepository = userRepository;
+    public UserDetailsServiceImpl(ILessorRepository lessorRepository, ILesseeRepository lesseeRepository) {
+        this.lessorRepository = lessorRepository;
+        this.lesseeRepository = lesseeRepository;
     }
 
+    // Usado por Spring temporalmente, infiere el usuario basándose en si contiene un '@'
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // 1. Buscamos el usuario en TU base de datos por email
-        Lessor lessor = userRepository.getByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con nombre de usuario: " + username ));
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        if (identifier.contains("@")) {
+            return loadLesseeByEmail(identifier);
+        }
+        return loadLessorByCompanyName(identifier);
+    }
 
-        // 2. Gestionamos los roles/permisos (Aquí asumo que tu usuario tiene un rol básico por ahora)
-        // Si tu entidad User tiene roles, deberás mapearlos aquí.
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_USER")); // Ejemplo de rol por defecto
+    // Nuevo método usado por nuestro JwtTokenFilter
+    public UserDetails loadUserByIdentifierAndRole(String identifier, String role) throws UsernameNotFoundException {
+        if ("ROLE_LESSEE".equals(role)) {
+            return loadLesseeByEmail(identifier);
+        } else if ("ROLE_LESSOR".equals(role)) {
+            return loadLessorByCompanyName(identifier);
+        }
+        throw new UsernameNotFoundException("Rol no reconocido en el token: " + role);
+    }
 
-        // 3. Retornamos el objeto User de Spring Security (NO tu entidad, sino el de Spring)
+    private UserDetails loadLessorByCompanyName(String companyName) {
+        Lessor lessor = lessorRepository.getByCompanyName(companyName)
+                .orElseThrow(() -> new UsernameNotFoundException("Lessor no encontrado: " + companyName));
+
         return new org.springframework.security.core.userdetails.User(
-                lessor.getUsername(),// El "username" para Spring
-                lessor.getPassword(),    // La contraseña encriptada de la BD
-                true,                  // enabled
-                true,                  // accountNonExpired
-                true,                  // credentialsNonExpired
-                true,                  // accountNonLocked
-                authorities            // Lista de roles
+                lessor.getCompanyName(), // Se usa companyName como identificador
+                "", // Contraseña vacía porque usamos datos biométricos
+                List.of(new SimpleGrantedAuthority("ROLE_LESSOR"))
+        );
+    }
+
+    private UserDetails loadLesseeByEmail(String email) {
+        Lessee lessee = lesseeRepository.getByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Lessee no encontrado: " + email));
+
+        return new org.springframework.security.core.userdetails.User(
+                lessee.getEmail(), // Se usa email como identificador
+                "", // Contraseña vacía porque usamos datos biométricos
+                List.of(new SimpleGrantedAuthority("ROLE_LESSEE"))
         );
     }
 }
-

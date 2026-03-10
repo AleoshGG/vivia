@@ -1,5 +1,6 @@
 package aleosh.online.vivia.features.users.lessor.data.entities;
 
+import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -30,4 +31,9 @@ public class PasskeyCredentialEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lessor_id", nullable = false)
     private LessorEntity lessor;
+
+    // Relación Muchos a Uno con el Arrendatario
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lessee_id", nullable = false)
+    private LesseeEntity lessee;
 }

@@ -2,12 +2,12 @@ package aleosh.online.vivia.features.users.lessor.controllers;
 
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.CreateLessorDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerifyLessorRegistrationDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
 import aleosh.online.vivia.features.users.lessor.services.ILessorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,22 +31,30 @@ public class LessorController {
         this.lessorService = lessorService;
     }
 
-    @Operation(summary = "Registrar un nuevo arrendador",
-            description = "Crea un arrendador enviando un JSON con sus datos básicos y la credencial biométrica (Passkey).")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Arrendador creado exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada o credencial inválidos", content = @Content),
-            @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content)
-    })
-    @PostMapping(consumes = "application/json", produces = "application/json")
-    public ResponseEntity<BaseResponse<LessorResponseDto>> createLessor(
-            @Parameter(description = "Datos del arrendador incluyendo la credencial WebAuthn", required = true, schema = @Schema(implementation = CreateLessorDto.class))
+    @Operation(summary = "Paso 1: Solicitar desafío de registro",
+            description = "Inicia el registro del arrendador y devuelve un JSON con el desafío (Challenge) para crear la Passkey.")
+    @PostMapping(value = "/register/challenge", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<String>> startRegistration(
             @RequestBody CreateLessorDto createLessorDto
     ) {
-        LessorResponseDto lessorResponseDto = lessorService.createLessor(createLessorDto);
+        // Retorna un JSON String directamente con los datos criptográficos requeridos por el celular
+        String webAuthnOptionsJson = lessorService.startRegistration(createLessorDto);
 
         return new BaseResponse<>(
-                true, lessorResponseDto, "Arrendador registrado correctamente", HttpStatus.CREATED
+                true, webAuthnOptionsJson, "Desafío generado correctamente", HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(summary = "Paso 2: Verificar credencial y guardar arrendador",
+            description = "Recibe la firma biométrica del dispositivo, la verifica y, si es válida, persiste el usuario en base de datos.")
+    @PostMapping(value = "/register/verify", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<LessorResponseDto>> finishRegistration(
+            @RequestBody VerifyLessorRegistrationDto verifyLessorRegistrationDto
+    ) {
+        LessorResponseDto lessorResponseDto = lessorService.finishRegistration(verifyLessorRegistrationDto);
+
+        return new BaseResponse<>(
+                true, lessorResponseDto, "Arrendador registrado exitosamente", HttpStatus.CREATED
         ).buildResponseEntity();
     }
 

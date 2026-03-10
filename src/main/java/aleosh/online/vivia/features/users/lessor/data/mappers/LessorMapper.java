@@ -15,6 +15,7 @@ public class LessorMapper {
 
         Lessor.Builder builder = Lessor.builder()
                 .id(lessorEntity.getId())
+                .userHandle(lessorEntity.getUserHandle()) // Agregado
                 .firstName(lessorEntity.getFirstName())
                 .lastName(lessorEntity.getLastName())
                 .companyName(lessorEntity.getCompanyName());
@@ -34,6 +35,7 @@ public class LessorMapper {
 
         LessorEntity lessorEntity = new LessorEntity();
         lessorEntity.setId(lessor.getId());
+        lessorEntity.setUserHandle(lessor.getUserHandle());
         lessorEntity.setFirstName(lessor.getFirstName());
         lessorEntity.setLastName(lessor.getLastName());
         lessorEntity.setCompanyName(lessor.getCompanyName());

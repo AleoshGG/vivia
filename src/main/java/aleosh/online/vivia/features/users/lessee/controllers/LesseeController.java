@@ -2,6 +2,7 @@ package aleosh.online.vivia.features.users.lessee.controllers;
 
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.CreateLesseeDto;
+import aleosh.online.vivia.features.users.lessee.data.dtos.request.VerifyLesseeRegistrationDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,22 +32,29 @@ public class LesseeController {
         this.lesseeService = lesseeService;
     }
 
-    @Operation(summary = "Registrar un nuevo arrendatario",
-            description = "Crea un arrendatario enviando un JSON con sus datos básicos.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Arrendatario creado exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos", content = @Content),
-            @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content)
-    })
-    @PostMapping(consumes = "application/json", produces = "application/json")
-    public ResponseEntity<BaseResponse<LesseeResponseDto>> createLessee(
-            @Parameter(description = "Datos del arrendatario", required = true, schema = @Schema(implementation = CreateLesseeDto.class))
+    @Operation(summary = "Paso 1: Solicitar desafío de registro",
+            description = "Inicia el registro del arrendatario y devuelve un JSON con el desafío (Challenge) para crear la Passkey.")
+    @PostMapping(value = "/register/challenge", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<String>> startRegistration(
             @RequestBody CreateLesseeDto createLesseeDto
     ) {
-        LesseeResponseDto lesseeResponseDto = lesseeService.createLessee(createLesseeDto);
+        String webAuthnOptionsJson = lesseeService.startRegistration(createLesseeDto);
 
         return new BaseResponse<>(
-                true, lesseeResponseDto, "Arrendatario registrado correctamente", HttpStatus.CREATED
+                true, webAuthnOptionsJson, "Desafío generado correctamente", HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(summary = "Paso 2: Verificar credencial y guardar arrendatario",
+            description = "Recibe la firma biométrica del dispositivo, la verifica y, si es válida, persiste el usuario en base de datos.")
+    @PostMapping(value = "/register/verify", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<LesseeResponseDto>> finishRegistration(
+            @RequestBody VerifyLesseeRegistrationDto verifyLesseeRegistrationDto
+    ) {
+        LesseeResponseDto lesseeResponseDto = lesseeService.finishRegistration(verifyLesseeRegistrationDto);
+
+        return new BaseResponse<>(
+                true, lesseeResponseDto, "Arrendatario registrado exitosamente", HttpStatus.CREATED
         ).buildResponseEntity();
     }
 
@@ -75,23 +83,6 @@ public class LesseeController {
 
         return new BaseResponse<>(
                 true, user, "Perfil obtenido correctamente", HttpStatus.OK
-        ).buildResponseEntity();
-    }
-
-    @Operation(summary = "Buscar arrendatario por correo", description = "Busca y devuelve los datos de un arrendatario específico mediante su correo electrónico.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Arrendatario encontrado"),
-            @ApiResponse(responseCode = "404", description = "Arrendatario no encontrado", content = @Content)
-    })
-    @GetMapping(value = "/email/{email}", produces = "application/json")
-    public ResponseEntity<BaseResponse<LesseeResponseDto>> getLesseeByEmail(
-            @Parameter(description = "Correo electrónico del arrendatario", required = true)
-            @PathVariable String email
-    ) {
-        LesseeResponseDto lessee = lesseeService.getLesseeByEmail(email);
-
-        return new BaseResponse<>(
-                true, lessee, "Arrendatario obtenido correctamente", HttpStatus.OK
         ).buildResponseEntity();
     }
 

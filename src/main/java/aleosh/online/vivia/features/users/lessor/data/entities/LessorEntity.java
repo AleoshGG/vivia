@@ -20,6 +20,11 @@ public class LessorEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    // NUEVO CAMPO OBLIGATORIO PARA WEBAUTHN
+    @Lob
+    @Column(name = "user_handle", nullable = false, unique = true)
+    private byte[] userHandle;
+
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
@@ -29,12 +34,10 @@ public class LessorEntity {
     @Column(name = "company_name", nullable = false, unique = true)
     private String companyName;
 
-    // Relación Uno a Muchos con las credenciales WebAuthn
     @OneToMany(mappedBy = "lessor", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude // Evita problemas de recursión infinita si haces un log de la entidad
+    @ToString.Exclude
     private List<PasskeyCredentialEntity> credentials = new ArrayList<>();
 
-    // Método de conveniencia para mantener la sincronización bidireccional
     public void addCredential(PasskeyCredentialEntity credential) {
         credentials.add(credential);
         credential.setLessor(this);

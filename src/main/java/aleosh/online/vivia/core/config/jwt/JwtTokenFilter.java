@@ -32,20 +32,16 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-            // 1. Obtenemos el token de la solicitud (del Header "Authorization")
             String token = getTokenFromRequest(request);
 
-            // 2. Validamos el token
             if (token != null && jwtProvider.validateToken(token)) {
+                // Obtenemos AMBOS datos: el identificador y el rol
+                String identifier = jwtProvider.getUsernameFromToken(token);
+                String role = jwtProvider.getRoleFromToken(token);
 
-                // 3. Obtenemos el username del token
-                String username = jwtProvider.getUsernameFromToken(token);
+                // Cargamos el usuario dependiendo estrictamente del rol guardado en el JWT
+                UserDetails userDetails = userDetailsService.loadUserByIdentifierAndRole(identifier, role);
 
-                // 4. Cargamos los detalles del usuario desde la base de datos
-                // (Esto asegura que el usuario siga existiendo y tenga roles actualizados)
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                // 5. Creamos la autenticación
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
@@ -53,24 +49,19 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                                 userDetails.getAuthorities()
                         );
 
-                // 6. Establecemos la autenticación en el contexto de seguridad
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         } catch (Exception e) {
             logger.error("No se pudo establecer la autenticación del usuario: {}", e.getMessage());
         }
 
-        // 7. IMPORTANTE: Continuar con la cadena de filtros
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * Extrae el token del header "Authorization: Bearer <token>"
-     */
     private String getTokenFromRequest(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
-            return header.substring(7); // Quita "Bearer " (7 caracteres)
+            return header.substring(7);
         }
         return null;
     }

@@ -20,9 +20,4 @@ public class CreateLessorDto {
 
     @Schema(description = "Nombre de la empresa único", example = "Rentas Ws")
     private String companyName;
-
-    @Valid
-    @NotNull(message = "La credencial passkey es obligatoria")
-    @Schema(description = "Credencial biométrica generada por el dispositivo")
-    private PasskeyRegistrationDto passkey;
 }
