@@ -65,7 +65,7 @@ public class LesseeServiceImpl implements ILesseeService {
         PublicKeyCredentialCreationOptions options = relyingParty.startRegistration(startOpts);
 
         // Almacenamos el estado pendiente vinculado al nombre de usuario
-        registrationCache.put(dto.getUsername(), new RegistrationRequestState(dto, options));
+        registrationCache.put(dto.getEmail(), new RegistrationRequestState(dto, options));
 
         try {
             // Devolvemos las opciones serializadas para que la app móvil inicie el escáner de huellas

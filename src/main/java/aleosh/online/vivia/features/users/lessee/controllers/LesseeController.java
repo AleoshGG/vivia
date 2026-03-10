@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -72,14 +73,14 @@ public class LesseeController {
     }
 
     @Operation(summary = "Obtener mi perfil", description = "Devuelve los datos del arrendatario autenticado usando el token de sesión.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Arrendatario encontrado"),
-            @ApiResponse(responseCode = "404", description = "Arrendatario no encontrado", content = @Content)
-    })
+    @PreAuthorize("hasRole('LESSEE')") // <-- PROTECCIÓN DE ROL
     @GetMapping(value = "/me", produces = "application/json")
     public ResponseEntity<BaseResponse<LesseeResponseDto>> getMyProfile() {
-        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-        LesseeResponseDto user = lesseeService.getLesseeByUsername(currentUsername);
+        // Extraemos el identificador (que sabemos que es el EMAIL gracias a nuestro UserDetailsService)
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // CORRECCIÓN: Usamos getLesseeByEmail en lugar de getLesseeByUsername
+        LesseeResponseDto user = lesseeService.getLesseeByEmail(currentEmail);
 
         return new BaseResponse<>(
                 true, user, "Perfil obtenido correctamente", HttpStatus.OK

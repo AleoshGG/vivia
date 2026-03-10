@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface LesseeRepository extends JpaRepository<LesseeEntity, UUID> {
     Optional<LesseeEntity> findByUsername(String username);
     Optional<LesseeEntity> findByEmail(String email);
+    Optional<LesseeEntity> findByUserHandle(byte[] userHandle);
 }

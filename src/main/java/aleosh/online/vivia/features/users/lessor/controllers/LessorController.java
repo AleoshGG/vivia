@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -72,14 +73,14 @@ public class LessorController {
     }
 
     @Operation(summary = "Obtener mi perfil", description = "Devuelve los datos del arrendador autenticado usando el token de sesión.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Arrendador encontrado"),
-            @ApiResponse(responseCode = "404", description = "Arrendador no encontrado", content = @Content)
-    })
+    @PreAuthorize("hasRole('LESSOR')") // <-- PROTECCIÓN DE ROL
     @GetMapping(value = "/me", produces = "application/json")
     public ResponseEntity<BaseResponse<LessorResponseDto>> getMyProfile() {
-        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-        LessorResponseDto user = lessorService.getLessorByUsername(currentUsername);
+        // Extraemos el identificador (que sabemos que es el COMPANY NAME gracias a nuestro UserDetailsService)
+        String currentCompanyName = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // CORRECCIÓN SEMÁNTICA: Usamos getLessorByCompanyName
+        LessorResponseDto user = lessorService.getLessorByCompanyName(currentCompanyName);
 
         return new BaseResponse<>(
                 true, user, "Perfil obtenido correctamente", HttpStatus.OK

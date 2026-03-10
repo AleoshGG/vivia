@@ -29,11 +29,11 @@ public class PasskeyCredentialEntity {
 
     // Relación Muchos a Uno con el Arrendador
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lessor_id", nullable = false)
+    @JoinColumn(name = "lessor_id", nullable = true)
     private LessorEntity lessor;
 
     // Relación Muchos a Uno con el Arrendatario
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lessee_id", nullable = false)
+    @JoinColumn(name = "lessee_id", nullable = true)
     private LesseeEntity lessee;
 }

@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface LessorRepository extends JpaRepository<LessorEntity, UUID> {
     Optional<LessorEntity> findByUsername(String username);
     Optional<LessorEntity> findByCompanyName(String companyName);
+    Optional<LessorEntity> findByUserHandle(byte[] userHandle);
 }
