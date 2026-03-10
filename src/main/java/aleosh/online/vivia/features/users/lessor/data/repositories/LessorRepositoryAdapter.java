@@ -34,7 +34,7 @@ public class LessorRepositoryAdapter implements ILessorRepository {
 
     @Override
     public Optional<Lessor> getByUsername(String username) {
-        Optional<LessorEntity> lessorEntity = lessorRepository.findByUsername(username);
+        Optional<LessorEntity> lessorEntity = lessorRepository.findByCompanyName(username);
         return lessorEntity.map(lessorMapper::toDomain);
     }
 
