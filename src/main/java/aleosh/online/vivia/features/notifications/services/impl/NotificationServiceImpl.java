@@ -30,10 +30,13 @@ public class NotificationServiceImpl implements INotificationService {
                 .build();
 
         try {
-            FirebaseMessaging.getInstance().sendMulticastAsync(message);
+            System.out.println("Intentando enviar notificación a " + tokens.size() + " dispositivos...");
+            FirebaseMessaging.getInstance().sendMulticastAsync(message).addListener(() -> {
+                System.out.println("Firebase procesó la petición de forma asíncrona.");
+            }, Runnable::run);
         } catch (Exception e) {
-            // Log the error or handle it as appropriate for your application
-            System.err.println("Error enviando notificaciones FCM: " + e.getMessage());
+            System.err.println("Error grave enviando a Firebase: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

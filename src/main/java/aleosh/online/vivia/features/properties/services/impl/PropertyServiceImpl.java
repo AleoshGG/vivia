@@ -115,6 +115,8 @@ public class PropertyServiceImpl implements IPropertyService {
                 .filter(token -> token != null && !token.isEmpty())
                 .collect(Collectors.toList());
 
+        System.out.println("Tokens encontrados para notificar: " + tokens.size());
+
         if (!tokens.isEmpty()) {
             notificationService.sendPropertyNotification(tokens, lessor.getCompanyName(), propertyEntity.getTitle());
         }
