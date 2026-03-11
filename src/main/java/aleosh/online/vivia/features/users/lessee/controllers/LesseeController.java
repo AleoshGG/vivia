@@ -87,4 +87,19 @@ public class LesseeController {
         ).buildResponseEntity();
     }
 
+    @Operation(summary = "Seguir a un arrendador", description = "Añade un arrendador a la lista de seguidos del arrendatario autenticado.")
+    @PreAuthorize("hasRole('LESSEE')")
+    @PostMapping(value = "/me/follow/{companyName}", produces = "application/json")
+    public ResponseEntity<BaseResponse<Void>> followLessor(
+            @Parameter(description = "Nombre de la empresa a seguir", required = true)
+            @PathVariable String companyName
+    ) {
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        lesseeService.followLessor(currentEmail, companyName);
+
+        return new BaseResponse<Void>(
+                true, null, "Ahora sigues a " + companyName, HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
 }

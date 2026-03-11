@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.users.lessee.data.entities;
 
 import aleosh.online.vivia.features.users.lessor.data.entities.PasskeyCredentialEntity;
+import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,6 +10,8 @@ import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.UUID;
 
 @Entity
@@ -34,6 +37,19 @@ public class LesseeEntity {
     @OneToMany(mappedBy = "lessee", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<PasskeyCredentialEntity> credentials = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "lessee_follows_lessor",
+        joinColumns = @JoinColumn(name = "lessee_id"),
+        inverseJoinColumns = @JoinColumn(name = "lessor_id")
+    )
+    @ToString.Exclude
+    private Set<LessorEntity> followedLessors = new HashSet<>();
+
+    public void followLessor(LessorEntity lessor) { followedLessors.add(lessor); }
+
+    public void unfollowLessor(LessorEntity lessor) { followedLessors.remove(lessor); }
 
     public void addCredential(PasskeyCredentialEntity credential) {
         credentials.add(credential);

@@ -12,4 +12,5 @@ public interface ILesseeService {
     LesseeResponseDto getLesseeByUsername(String username);
     LesseeResponseDto getLesseeByEmail(String email);
     List<LesseeResponseDto> getAllLessees();
+    void followLessor(String lesseeEmail, String lessorCompanyName);
 }

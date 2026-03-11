@@ -3,10 +3,12 @@ package aleosh.online.vivia.features.users.lessee.data.mappers;
 import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
 import aleosh.online.vivia.features.users.lessee.domain.entities.Lessee;
 import aleosh.online.vivia.features.users.lessor.data.entities.PasskeyCredentialEntity;
+import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import aleosh.online.vivia.features.users.lessor.domain.valueobjects.PasskeyCredential;
 import org.springframework.stereotype.Component;
 
 import java.util.Base64;
+import java.util.UUID;
 
 @Component("lesseeDataMapper")
 public class LesseeMapper {
@@ -25,6 +27,12 @@ public class LesseeMapper {
             }
         }
 
+        if (lesseeEntity.getFollowedLessors() != null) {
+            for (LessorEntity lessor : lesseeEntity.getFollowedLessors()) {
+                builder.addFollowedLessorId(lessor.getId());
+            }
+        }
+
         return builder.build();
     }
 
@@ -40,6 +48,14 @@ public class LesseeMapper {
         if (lessee.getCredentials() != null) {
             for (PasskeyCredential cred : lessee.getCredentials()) {
                 lesseeEntity.addCredential(mapToEntityCredential(cred));
+            }
+        }
+
+        if (lessee.getFollowedLessorIds() != null) {
+            for (UUID lessorId : lessee.getFollowedLessorIds()) {
+                LessorEntity lessorReference = new LessorEntity();
+                lessorReference.setId(lessorId);
+                lesseeEntity.getFollowedLessors().add(lessorReference);
             }
         }
 

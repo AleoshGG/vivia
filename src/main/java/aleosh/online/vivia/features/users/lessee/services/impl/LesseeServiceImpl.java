@@ -5,9 +5,13 @@ import aleosh.online.vivia.features.users.lessee.data.dtos.request.VerifyLesseeR
 import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
 import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
 import aleosh.online.vivia.features.users.lessee.data.repositories.LesseeRepository;
+import aleosh.online.vivia.features.users.lessee.domain.entities.Lessee;
+import aleosh.online.vivia.features.users.lessee.domain.repositories.ILesseeRepository;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
 import aleosh.online.vivia.features.users.lessee.services.mappers.LesseeMapper;
 import aleosh.online.vivia.features.users.lessor.data.entities.PasskeyCredentialEntity;
+import aleosh.online.vivia.features.users.lessor.domain.entities.Lessor;
+import aleosh.online.vivia.features.users.lessor.domain.repositories.ILessorRepository;
 import com.yubico.webauthn.*;
 import com.yubico.webauthn.data.*;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,19 +27,25 @@ import java.util.stream.Collectors;
 public class LesseeServiceImpl implements ILesseeService {
 
     private final LesseeRepository lesseeRepository;
+    private final ILesseeRepository lesseeDomainRepository;
     private final LesseeMapper lesseeMapper;
     private final RelyingParty relyingParty;
+    private final ILessorRepository lessorRepository;
 
     private final Map<String, RegistrationRequestState> registrationCache = new ConcurrentHashMap<>();
 
     public LesseeServiceImpl(
             LesseeRepository lesseeRepository,
+            ILesseeRepository lesseeDomainRepository,
             @Qualifier("lesseeServiceMapper") LesseeMapper lesseeMapper,
-            RelyingParty relyingParty
+            RelyingParty relyingParty,
+            ILessorRepository lessorRepository
     ) {
         this.lesseeRepository = lesseeRepository;
+        this.lesseeDomainRepository = lesseeDomainRepository;
         this.lesseeMapper = lesseeMapper;
         this.relyingParty = relyingParty;
+        this.lessorRepository = lessorRepository;
     }
 
     @Override
@@ -149,5 +159,27 @@ public class LesseeServiceImpl implements ILesseeService {
         return lesseeRepository.findAll().stream()
                 .map(lesseeMapper::toLesseeResponseDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void followLessor(String lesseeEmail, String lessorCompanyName) {
+        Lessee lessee = lesseeDomainRepository.getByEmail(lesseeEmail)
+                .orElseThrow(() -> new RuntimeException("Arrendatario no encontrado"));
+
+        Lessor lessor = lessorRepository.getByCompanyName(lessorCompanyName)
+                .orElseThrow(() -> new RuntimeException("Arrendador no encontrado"));
+
+        // Reconstruimos el Lessee añadiendo el nuevo ID al set usando el builder
+        Lessee updatedLessee = Lessee.builder()
+                .id(lessee.getId())
+                .userHandle(lessee.getUserHandle())
+                .username(lessee.getUsername())
+                .email(lessee.getEmail())
+                .credentials(lessee.getCredentials())
+                .followedLessorIds(lessee.getFollowedLessorIds())
+                .addFollowedLessorId(lessor.getId())
+                .build();
+
+        lesseeDomainRepository.save(updatedLessee);
     }
 }
