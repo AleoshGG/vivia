@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface IPropertyService {
-    PropertyResponseDto createProperty(CreatePropertyDto dto, UUID lessorId, List<MultipartFile> files);
+    PropertyResponseDto createProperty(CreatePropertyDto dto, String companyName, List<MultipartFile> files);
     List<PropertyResponseDto> getPropertiesByLessorId(UUID lessorId);
 }

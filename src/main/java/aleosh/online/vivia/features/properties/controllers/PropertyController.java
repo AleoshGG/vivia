@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,13 +55,11 @@ public class PropertyController {
             @Parameter(description = "Datos de la propiedad", required = true)
             @RequestPart("property") @Valid CreatePropertyDto createPropertyDto,
             
-            @Parameter(description = "ID del arrendador", required = true)
-            @RequestParam("lessorId") UUID lessorId,
-            
             @Parameter(description = "Imágenes de la propiedad", required = false)
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
-        PropertyResponseDto createdProperty = propertyService.createProperty(createPropertyDto, lessorId, images);
+        String companyName = SecurityContextHolder.getContext().getAuthentication().getName();
+        PropertyResponseDto createdProperty = propertyService.createProperty(createPropertyDto, companyName, images);
         
         return new BaseResponse<>(
                 true, createdProperty, "Propiedad creada exitosamente", HttpStatus.CREATED

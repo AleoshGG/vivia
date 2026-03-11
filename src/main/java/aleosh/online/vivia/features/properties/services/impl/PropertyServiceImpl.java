@@ -64,10 +64,10 @@ public class PropertyServiceImpl implements IPropertyService {
 
     @Override
     @Transactional
-    public PropertyResponseDto createProperty(CreatePropertyDto dto, UUID lessorId, List<MultipartFile> files) {
+    public PropertyResponseDto createProperty(CreatePropertyDto dto, String companyName, List<MultipartFile> files) {
         // 1. Buscar al Lessor en la base de datos
-        LessorEntity lessor = lessorRepository.findById(lessorId)
-                .orElseThrow(() -> new IllegalArgumentException("Arrendador no encontrado con ID: " + lessorId));
+        LessorEntity lessor = lessorRepository.findByCompanyName(companyName)
+                .orElseThrow(() -> new IllegalArgumentException("Arrendador no encontrado: " + companyName));
 
         // 2. Guardar la PropertyEntity vinculada al Lessor
         PropertyEntity propertyEntity = PropertyEntity.builder()
@@ -110,7 +110,7 @@ public class PropertyServiceImpl implements IPropertyService {
             }
         }
 
-        List<String> tokens = lesseeRepository.findByFollowedLessors_Id(lessorId).stream()
+        List<String> tokens = lesseeRepository.findByFollowedLessors_Id(lessor.getId()).stream()
                 .map(l -> l.getFcmToken())
                 .filter(token -> token != null && !token.isEmpty())
                 .collect(Collectors.toList());
