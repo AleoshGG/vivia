@@ -36,9 +36,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/lessors/register/**").permitAll()
+                        .requestMatchers("/lessors/**").permitAll()
                         .requestMatchers("/properties/**").permitAll()
-                        .requestMatchers("/lessees/register/**").permitAll()
+                        .requestMatchers("/lessees/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/.well-known/assetlinks.json").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
