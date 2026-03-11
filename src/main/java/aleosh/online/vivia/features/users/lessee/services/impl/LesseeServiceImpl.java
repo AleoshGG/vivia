@@ -18,6 +18,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -169,14 +171,14 @@ public class LesseeServiceImpl implements ILesseeService {
         Lessor lessor = lessorRepository.getByCompanyName(lessorCompanyName)
                 .orElseThrow(() -> new RuntimeException("Arrendador no encontrado"));
 
-        // Reconstruimos el Lessee añadiendo el nuevo ID al set usando el builder
+        // SOLUCIÓN: Envolvemos las colecciones para hacerlas mutables
         Lessee updatedLessee = Lessee.builder()
                 .id(lessee.getId())
                 .userHandle(lessee.getUserHandle())
                 .username(lessee.getUsername())
                 .email(lessee.getEmail())
-                .credentials(lessee.getCredentials())
-                .followedLessorIds(lessee.getFollowedLessorIds())
+                .credentials(new ArrayList<>(lessee.getCredentials())) // Evita el mismo error con las credenciales
+                .followedLessorIds(new HashSet<>(lessee.getFollowedLessorIds())) // <--- EL FIX ESTÁ AQUÍ
                 .addFollowedLessorId(lessor.getId())
                 .build();
 
