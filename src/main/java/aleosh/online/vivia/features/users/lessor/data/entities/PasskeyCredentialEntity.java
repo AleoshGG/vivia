@@ -20,7 +20,7 @@ public class PasskeyCredentialEntity {
 
     // Almacenamos la llave pública en formato de bytes.
     // Usamos @Lob porque dependiendo del algoritmo, la llave puede exceder el límite de un VARCHAR estándar.
-    @Lob
+    //@Lob
     @Column(name = "public_key", nullable = false)
     private byte[] publicKey;
 

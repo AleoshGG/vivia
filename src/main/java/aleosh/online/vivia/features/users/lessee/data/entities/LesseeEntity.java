@@ -21,7 +21,7 @@ public class LesseeEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Lob
+    //@Lob
     @Column(name = "user_handle", nullable = false, unique = true)
     private byte[] userHandle;
 

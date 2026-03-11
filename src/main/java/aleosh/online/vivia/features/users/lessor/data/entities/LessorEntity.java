@@ -21,7 +21,7 @@ public class LessorEntity {
     private UUID id;
 
     // NUEVO CAMPO OBLIGATORIO PARA WEBAUTHN
-    @Lob
+    //@Lob
     @Column(name = "user_handle", nullable = false, unique = true)
     private byte[] userHandle;
 
