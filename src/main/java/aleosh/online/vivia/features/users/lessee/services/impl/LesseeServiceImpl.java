@@ -182,4 +182,22 @@ public class LesseeServiceImpl implements ILesseeService {
 
         lesseeDomainRepository.save(updatedLessee);
     }
+
+    @Override
+    public void updateFcmToken(String email, String fcmToken) {
+        Lessee lessee = lesseeDomainRepository.getByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Arrendatario no encontrado"));
+
+        Lessee updatedLessee = Lessee.builder()
+                .id(lessee.getId())
+                .userHandle(lessee.getUserHandle())
+                .username(lessee.getUsername())
+                .email(lessee.getEmail())
+                .fcmToken(fcmToken)
+                .credentials(lessee.getCredentials())
+                .followedLessorIds(lessee.getFollowedLessorIds())
+                .build();
+
+        lesseeDomainRepository.save(updatedLessee);
+    }
 }

@@ -13,4 +13,5 @@ public interface ILesseeService {
     LesseeResponseDto getLesseeByEmail(String email);
     List<LesseeResponseDto> getAllLessees();
     void followLessor(String lesseeEmail, String lessorCompanyName);
+    void updateFcmToken(String email, String fcmToken);
 }

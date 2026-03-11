@@ -34,6 +34,9 @@ public class LesseeEntity {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
     @OneToMany(mappedBy = "lessee", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<PasskeyCredentialEntity> credentials = new ArrayList<>();

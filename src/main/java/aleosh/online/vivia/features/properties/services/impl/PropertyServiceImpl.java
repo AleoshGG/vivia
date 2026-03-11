@@ -10,6 +10,8 @@ import aleosh.online.vivia.features.properties.services.IPropertyService;
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import aleosh.online.vivia.features.users.lessor.data.repositories.LessorRepository;
 import aleosh.online.vivia.features.users.lessor.services.IStorageService;
+import aleosh.online.vivia.features.users.lessee.data.repositories.LesseeRepository;
+import aleosh.online.vivia.features.notifications.services.INotificationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,8 @@ public class PropertyServiceImpl implements IPropertyService {
     private final PropertyImageRepository propertyImageRepository;
     private final LessorRepository lessorRepository;
     private final IStorageService s3StorageService;
+    private final LesseeRepository lesseeRepository;
+    private final INotificationService notificationService;
 
     @Override
     public List<PropertyResponseDto> getPropertiesByLessorId(UUID lessorId) {
@@ -104,6 +108,15 @@ public class PropertyServiceImpl implements IPropertyService {
                     }
                 }
             }
+        }
+
+        List<String> tokens = lesseeRepository.findByFollowedLessors_Id(lessorId).stream()
+                .map(l -> l.getFcmToken())
+                .filter(token -> token != null && !token.isEmpty())
+                .collect(Collectors.toList());
+
+        if (!tokens.isEmpty()) {
+            notificationService.sendPropertyNotification(tokens, lessor.getCompanyName(), propertyEntity.getTitle());
         }
 
         return PropertyResponseDto.builder()

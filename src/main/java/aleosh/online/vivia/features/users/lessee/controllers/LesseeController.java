@@ -102,4 +102,19 @@ public class LesseeController {
         ).buildResponseEntity();
     }
 
+    @Operation(summary = "Actualizar token de FCM", description = "Actualiza el token de Firebase Cloud Messaging del arrendatario autenticado.")
+    @PreAuthorize("hasRole('LESSEE')")
+    @PutMapping(value = "/me/fcm-token", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<Void>> updateFcmToken(
+            @RequestBody java.util.Map<String, String> payload
+    ) {
+        String fcmToken = payload.get("fcmToken");
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        lesseeService.updateFcmToken(currentEmail, fcmToken);
+
+        return new BaseResponse<Void>(
+                true, null, "Token FCM actualizado correctamente", HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
 }
