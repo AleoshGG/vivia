@@ -31,6 +31,34 @@ public class PropertyServiceImpl implements IPropertyService {
     private final IStorageService s3StorageService;
 
     @Override
+    public List<PropertyResponseDto> getPropertiesByLessorId(UUID lessorId) {
+        List<PropertyEntity> properties = propertyRepository.findByLessor_Id(lessorId);
+        return properties.stream().map(property -> {
+            List<String> imageUrls = property.getImages().stream()
+                    .map(PropertyImageEntity::getUrl)
+                    .collect(Collectors.toList());
+
+            return PropertyResponseDto.builder()
+                    .id(property.getId())
+                    .title(property.getTitle())
+                    .description(property.getDescription())
+                    .price(property.getPrice())
+                    .address(property.getAddress())
+                    .city(property.getCity())
+                    .state(property.getState())
+                    .neighborhood(property.getNeighborhood())
+                    .departmentType(property.getDepartmentType())
+                    .area(property.getArea())
+                    .roomsNumber(property.getRoomsNumber())
+                    .bathroomsNumber(property.getBathroomsNumber())
+                    .parkingNumber(property.getParkingNumber())
+                    .lessorId(property.getLessor().getId())
+                    .imageUrls(imageUrls)
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public PropertyResponseDto createProperty(CreatePropertyDto dto, UUID lessorId, List<MultipartFile> files) {
         // 1. Buscar al Lessor en la base de datos

@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface IPropertyService {
     PropertyResponseDto createProperty(CreatePropertyDto dto, UUID lessorId, List<MultipartFile> files);
+    List<PropertyResponseDto> getPropertiesByLessorId(UUID lessorId);
 }
