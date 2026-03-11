@@ -16,8 +16,8 @@ public class WebAuthnConfig {
     ) {
         // 1. Definimos la identidad de nuestra app (Relying Party)
         RelyingPartyIdentity rpIdentity = RelyingPartyIdentity.builder()
-                .id("localhost") // IMPORTANTE: En producción, debe ser tu dominio real (ej. vivia.online)
-                .name("Vivia App")
+                .id("vivia.aleosh.online") // IMPORTANTE: En producción, debe ser tu dominio real (ej. vivia.online)
+                .name("ViviaAplication")
                 .build();
 
         // 2. Construimos el RelyingParty inyectando el adaptador
@@ -26,8 +26,10 @@ public class WebAuthnConfig {
                 .credentialRepository(credentialAdapter)
                 // Aquí definimos los orígenes permitidos (Web y hashes de la app móvil)
                 .origins(Set.of(
+                        "https://vivia.aleosh.online",
                         "http://localhost:8080",
-                        "http://localhost:3000"
+                        "http://localhost:3000",
+                        "android:apk-key-hash:usWotFl5QnpwvgXbGEq_ESBUUuZZ8NR7MmKWLVv1EKY"
                 ))
                 .build();
     }
