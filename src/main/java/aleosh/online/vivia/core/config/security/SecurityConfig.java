@@ -37,7 +37,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/lessors/register/**").permitAll()
-                        .requestMatchers("/properties").permitAll()
+                        .requestMatchers("/properties/**").permitAll()
                         .requestMatchers("/lessees/register/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/.well-known/assetlinks.json").permitAll()
