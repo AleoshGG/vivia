@@ -29,7 +29,8 @@ public class WebAuthnConfig {
                         "https://vivia.aleosh.online",
                         "http://localhost:8080",
                         "http://localhost:3000",
-                        "android:apk-key-hash:usWotFl5QnpwvgXbGEq_ESBUUuZZ8NR7MmKWLVv1EKY"
+                        "android:apk-key-hash:usWotFl5QnpwvgXbGEq_ESBUUuZZ8NR7MmKWLVv1EKY",
+                        "android:apk-key-hash:GR88wSinBkJ0kuL7C6CNgfBP2hd8gnY6VVHXeXllxGQ"
                 ))
                 .build();
     }
