@@ -63,6 +63,13 @@ public class PropertyServiceImpl implements IPropertyService {
     }
 
     @Override
+    public List<PropertyResponseDto> getPropertiesByLessorCompanyName(String companyName) {
+        LessorEntity lessor = lessorRepository.findByCompanyName(companyName)
+                .orElseThrow(() -> new IllegalArgumentException("Arrendador no encontrado: " + companyName));
+        return getPropertiesByLessorId(lessor.getId());
+    }
+
+    @Override
     @Transactional
     public PropertyResponseDto createProperty(CreatePropertyDto dto, String companyName, List<MultipartFile> files) {
         // 1. Buscar al Lessor en la base de datos

@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/properties")
@@ -31,16 +30,15 @@ public class PropertyController {
 
     private final IPropertyService propertyService;
 
-    @Operation(summary = "Obtener propiedades por arrendador", description = "Devuelve una lista de propiedades asociadas al ID del arrendador.")
+    @Operation(summary = "Obtener propiedades por arrendador", description = "Devuelve una lista de propiedades asociadas al arrendador autenticado.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente")
     })
-    @GetMapping(value = "/lessor/{lessorId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseResponse<List<PropertyResponseDto>>> getPropertiesByLessor(
-            @Parameter(description = "ID del arrendador", required = true)
-            @PathVariable UUID lessorId
-    ) {
-        List<PropertyResponseDto> properties = propertyService.getPropertiesByLessorId(lessorId);
+    @PreAuthorize("hasRole('LESSOR')")
+    @GetMapping(value = "/lessor", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseResponse<List<PropertyResponseDto>>> getPropertiesByLessor() {
+        String companyName = SecurityContextHolder.getContext().getAuthentication().getName();
+        List<PropertyResponseDto> properties = propertyService.getPropertiesByLessorCompanyName(companyName);
         return new BaseResponse<>(
                 true, properties, "Propiedades obtenidas correctamente", HttpStatus.OK
         ).buildResponseEntity();
