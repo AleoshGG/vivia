@@ -100,7 +100,7 @@ public class PropertyServiceImpl implements IPropertyService {
 
     @Override
     @Transactional
-    public PropertyResponseDto createProperty(CreatePropertyDto dto, String companyName, List<MultipartFile> files) {
+    public PropertyResponseDto createProperty(CreatePropertyDto dto, String companyName) {
         // 1. Buscar al Lessor en la base de datos
         LessorEntity lessor = lessorRepository.findByCompanyName(companyName)
                 .orElseThrow(() -> new IllegalArgumentException("Arrendador no encontrado: " + companyName));
@@ -128,14 +128,28 @@ public class PropertyServiceImpl implements IPropertyService {
 
         propertyEntity = propertyRepository.save(propertyEntity);
 
+        return mapToResponseDto(propertyEntity);
+    }
+
+    @Override
+    @Transactional
+    public PropertyResponseDto uploadImages(UUID propertyId, String companyName, List<MultipartFile> files) {
+        PropertyEntity propertyEntity = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new IllegalArgumentException("Propiedad no encontrada"));
+
+        if (!propertyEntity.getLessor().getCompanyName().equals(companyName)) {
+            throw new IllegalArgumentException("No tienes permisos para modificar esta propiedad");
+        }
+
+        boolean isFirstTimeImages = propertyEntity.getImages() == null || propertyEntity.getImages().isEmpty();
+        boolean uploadedAny = false;
+
         // 3. Iterar sobre la lista de archivos, subirlos a S3 uno por uno
-        List<String> imageUrls = new ArrayList<>();
         if (files != null && !files.isEmpty()) {
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
                     try {
                         String fileUrl = s3StorageService.uploadFile(file);
-                        imageUrls.add(fileUrl);
                         
                         // 4. Guardar las URLs devueltas en la tabla PropertyImageEntity vinculadas a la propiedad
                         PropertyImageEntity imageEntity = PropertyImageEntity.builder()
@@ -143,6 +157,9 @@ public class PropertyServiceImpl implements IPropertyService {
                                 .property(propertyEntity)
                                 .build();
                         propertyImageRepository.save(imageEntity);
+                        
+                        propertyEntity.addImage(imageEntity);
+                        uploadedAny = true;
                     } catch (IOException e) {
                         throw new RuntimeException("Error al subir el archivo a S3", e);
                     }
@@ -150,37 +167,19 @@ public class PropertyServiceImpl implements IPropertyService {
             }
         }
 
-        List<String> tokens = lesseeRepository.findByFollowedLessors_Id(lessor.getId()).stream()
-                .map(l -> l.getFcmToken())
-                .filter(token -> token != null && !token.isEmpty())
-                .collect(Collectors.toList());
+        if (uploadedAny && isFirstTimeImages) {
+            List<String> tokens = lesseeRepository.findByFollowedLessors_Id(propertyEntity.getLessor().getId()).stream()
+                    .map(l -> l.getFcmToken())
+                    .filter(token -> token != null && !token.isEmpty())
+                    .collect(Collectors.toList());
 
-        System.out.println("Tokens encontrados para notificar: " + tokens.size());
+            System.out.println("Tokens encontrados para notificar: " + tokens.size());
 
-        if (!tokens.isEmpty()) {
-            notificationService.sendPropertyNotification(tokens, lessor.getCompanyName(), propertyEntity.getTitle());
+            if (!tokens.isEmpty()) {
+                notificationService.sendPropertyNotification(tokens, propertyEntity.getLessor().getCompanyName(), propertyEntity.getTitle());
+            }
         }
 
-        aleosh.online.vivia.features.properties.address.data.dtos.AddressDto addressDto = aleosh.online.vivia.features.properties.address.data.dtos.AddressDto.builder()
-                .address(propertyEntity.getAddress().getAddress())
-                .city(propertyEntity.getAddress().getCity())
-                .state(propertyEntity.getAddress().getState())
-                .neighborhood(propertyEntity.getAddress().getNeighborhood())
-                .build();
-
-        return PropertyResponseDto.builder()
-                .id(propertyEntity.getId())
-                .title(propertyEntity.getTitle())
-                .description(propertyEntity.getDescription())
-                .price(propertyEntity.getPrice())
-                .address(addressDto)
-                .departmentType(propertyEntity.getDepartmentType())
-                .area(propertyEntity.getArea())
-                .roomsNumber(propertyEntity.getRoomsNumber())
-                .bathroomsNumber(propertyEntity.getBathroomsNumber())
-                .parkingNumber(propertyEntity.getParkingNumber())
-                .lessorId(lessor.getId())
-                .imageUrls(imageUrls)
-                .build();
+        return mapToResponseDto(propertyEntity);
     }
 }

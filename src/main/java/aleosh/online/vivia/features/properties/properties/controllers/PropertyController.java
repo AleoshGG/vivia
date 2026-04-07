@@ -76,25 +76,43 @@ public class PropertyController {
         ).buildResponseEntity();
     }
 
-    @Operation(summary = "Crear una nueva propiedad", description = "Sube la información de la propiedad junto con sus imágenes a AWS S3.")
+    @Operation(summary = "Crear una nueva propiedad", description = "Crea la información base de la propiedad sin imágenes.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Propiedad creada exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos", content = @Content)
     })
     @PreAuthorize("hasRole('LESSOR')")
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<PropertyResponseDto>> createProperty(
             @Parameter(description = "Datos de la propiedad", required = true)
-            @RequestPart("property") @Valid CreatePropertyDto createPropertyDto,
-            
-            @Parameter(description = "Imágenes de la propiedad", required = false)
-            @RequestPart(value = "images", required = false) List<MultipartFile> images
+            @RequestBody @Valid CreatePropertyDto createPropertyDto
     ) {
         String companyName = SecurityContextHolder.getContext().getAuthentication().getName();
-        PropertyResponseDto createdProperty = propertyService.createProperty(createPropertyDto, companyName, images);
+        PropertyResponseDto createdProperty = propertyService.createProperty(createPropertyDto, companyName);
         
         return new BaseResponse<>(
                 true, createdProperty, "Propiedad creada exitosamente", HttpStatus.CREATED
+        ).buildResponseEntity();
+    }
+
+    @Operation(summary = "Subir imágenes a la propiedad", description = "Sube imágenes a una propiedad existente y notifica a los seguidores si es la primera vez.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Imágenes subidas exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o propiedad no encontrada", content = @Content)
+    })
+    @PreAuthorize("hasRole('LESSOR')")
+    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseResponse<PropertyResponseDto>> uploadImages(
+            @Parameter(description = "ID de la propiedad", required = true)
+            @PathVariable UUID id,
+            @Parameter(description = "Imágenes de la propiedad", required = true)
+            @RequestPart("images") List<MultipartFile> images
+    ) {
+        String companyName = SecurityContextHolder.getContext().getAuthentication().getName();
+        PropertyResponseDto updatedProperty = propertyService.uploadImages(id, companyName, images);
+
+        return new BaseResponse<>(
+                true, updatedProperty, "Imágenes subidas exitosamente", HttpStatus.OK
         ).buildResponseEntity();
     }
 }

@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface IPropertyService {
-    PropertyResponseDto createProperty(CreatePropertyDto dto, String companyName, List<MultipartFile> files);
+    PropertyResponseDto createProperty(CreatePropertyDto dto, String companyName);
+    PropertyResponseDto uploadImages(UUID propertyId, String companyName, List<MultipartFile> files);
     List<PropertyResponseDto> getPropertiesByLessorId(UUID lessorId);
     List<PropertyResponseDto> getPropertiesByLessorCompanyName(String companyName);
     void deleteProperty(UUID id, String companyName);
