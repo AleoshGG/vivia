@@ -10,7 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthResponseDto {
-    @Schema(description = "JSON Web Token", example = "token")
-    private String token;
+    @Schema(description = "Access Token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    private String accessToken;
+
+    @Schema(description = "Refresh Token para renovar sesión", example = "d9b2d63d-a233-4123-8478-...")
+    private String refreshToken;
 }
 

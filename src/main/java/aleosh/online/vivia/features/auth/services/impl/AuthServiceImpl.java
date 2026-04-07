@@ -13,6 +13,8 @@ import com.yubico.webauthn.StartAssertionOptions;
 import com.yubico.webauthn.data.AuthenticatorAssertionResponse;
 import com.yubico.webauthn.data.ClientAssertionExtensionOutputs;
 import com.yubico.webauthn.data.PublicKeyCredential;
+import aleosh.online.vivia.features.auth.data.dtos.request.RefreshTokenRequestDto;
+import aleosh.online.vivia.features.auth.data.entities.RefreshTokenEntity;
 import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -33,6 +35,7 @@ public class AuthServiceImpl implements IAuthService {
     private final UserDetailsServiceImpl userDetailsService;
     private final PasskeyCredentialRepository passkeyRepository;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
 
     // Caché para los desafíos de login. La clave es el propio desafío en Base64Url
     private final Map<String, AssertionRequest> loginCache = new ConcurrentHashMap<>();
@@ -42,13 +45,15 @@ public class AuthServiceImpl implements IAuthService {
             RelyingParty relyingParty,
             UserDetailsServiceImpl userDetailsService,
             PasskeyCredentialRepository passkeyRepository,
-            AuthenticationManager authenticationManager
+            AuthenticationManager authenticationManager,
+            RefreshTokenService refreshTokenService
     ) {
         this.jwtProvider = jwtProvider;
         this.relyingParty = relyingParty;
         this.userDetailsService = userDetailsService;
         this.passkeyRepository = passkeyRepository;
         this.authenticationManager = authenticationManager;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Override
@@ -108,7 +113,11 @@ public class AuthServiceImpl implements IAuthService {
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
                 String jwt = jwtProvider.generateToken(auth);
-                return new AuthResponseDto(jwt);
+                
+                String role = userDetails.getAuthorities().iterator().next().getAuthority();
+                RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(identifier, role);
+                
+                return new AuthResponseDto(jwt, refreshToken.getToken());
             } else {
                 throw new RuntimeException("La validación de la huella falló.");
             }
@@ -127,6 +136,34 @@ public class AuthServiceImpl implements IAuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String jwt = jwtProvider.generateToken(authentication);
-        return new AuthResponseDto(jwt);
+        
+        String role = authentication.getAuthorities().iterator().next().getAuthority();
+        RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(loginDto.getIdentifier(), role);
+        
+        return new AuthResponseDto(jwt, refreshToken.getToken());
+    }
+
+    @Override
+    public AuthResponseDto refreshToken(RefreshTokenRequestDto request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        RefreshTokenEntity refreshTokenEntity = refreshTokenService.findByToken(requestRefreshToken);
+        refreshTokenService.verifyExpiration(refreshTokenEntity);
+
+        String userIdentifier = refreshTokenEntity.getUserIdentifier();
+        String role = refreshTokenEntity.getRole();
+
+        UserDetails userDetails = userDetailsService.loadUserByIdentifierAndRole(userIdentifier, role);
+
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities()
+        );
+
+        String jwt = jwtProvider.generateToken(auth);
+
+        // Rotation
+        RefreshTokenEntity newRefreshToken = refreshTokenService.createRefreshToken(userIdentifier, role);
+
+        return new AuthResponseDto(jwt, newRefreshToken.getToken());
     }
 }
