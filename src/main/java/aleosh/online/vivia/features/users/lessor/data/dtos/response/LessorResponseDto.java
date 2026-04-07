@@ -23,4 +23,7 @@ public class LessorResponseDto {
 
     @Schema(description = "Nombre de la empresa", example = "Rentas Ws")
     private String companyName;
+
+    @Schema(description = "Número de teléfono", example = "5564234321")
+    private String phoneNumber;
 }

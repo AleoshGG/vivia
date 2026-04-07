@@ -20,4 +20,8 @@ public class CreateLesseeDto {
     @Email(message = "Debe ser un correo electrónico válido")
     @Schema(description = "Correo electrónico del usuario", example = "john.doe@example.com")
     private String email;
+
+    @NotBlank(message = "La contraseña es obligatoria")
+    @Schema(description = "Contraseña", example = "password123")
+    private String password;
 }

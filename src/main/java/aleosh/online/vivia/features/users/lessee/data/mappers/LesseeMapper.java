@@ -20,6 +20,7 @@ public class LesseeMapper {
                 .userHandle(lesseeEntity.getUserHandle())
                 .username(lesseeEntity.getUsername())
                 .email(lesseeEntity.getEmail())
+                .password(lesseeEntity.getPassword())
                 .fcmToken(lesseeEntity.getFcmToken());
 
         if (lesseeEntity.getCredentials() != null) {
@@ -45,6 +46,7 @@ public class LesseeMapper {
         lesseeEntity.setUserHandle(lessee.getUserHandle());
         lesseeEntity.setUsername(lessee.getUsername());
         lesseeEntity.setEmail(lessee.getEmail());
+        lesseeEntity.setPassword(lessee.getPassword());
         lesseeEntity.setFcmToken(lessee.getFcmToken());
         
         if (lessee.getCredentials() != null) {

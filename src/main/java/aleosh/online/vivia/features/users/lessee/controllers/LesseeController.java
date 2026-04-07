@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import aleosh.online.vivia.features.users.lessee.data.dtos.response.LessorWithFollowStatusDto;
+
 @RestController
 @RequestMapping("/lessees")
 @Tag(name = "Gestión de arrendatarios", description = "Endpoints para crear, listar y buscar arrendatarios.")
@@ -109,6 +111,21 @@ public class LesseeController {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         lesseeService.updateFcmToken(currentEmail, token);
         return new BaseResponse<Void>(true, null, "Token FCM actualizado correctamente", HttpStatus.OK).buildResponseEntity();
+    }
+
+    @Operation(summary = "Obtener arrendadores con estado de seguimiento", description = "Lista todos los arrendadores y marca cuáles son seguidos por el arrendatario autenticado.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente")
+    })
+    @PreAuthorize("hasRole('LESSEE')")
+    @GetMapping(value = "/follows", produces = "application/json")
+    public ResponseEntity<BaseResponse<List<LessorWithFollowStatusDto>>> getLessorsWithFollowStatus() {
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        List<LessorWithFollowStatusDto> lessors = lesseeService.getAllLessorsWithFollowStatus(currentEmail);
+
+        return new BaseResponse<>(
+                true, lessors, "Arrendadores obtenidos correctamente", HttpStatus.OK
+        ).buildResponseEntity();
     }
 
 }

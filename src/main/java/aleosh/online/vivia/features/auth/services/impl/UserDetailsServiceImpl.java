@@ -50,7 +50,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         return new org.springframework.security.core.userdetails.User(
                 lessor.getCompanyName(), // Se usa companyName como identificador
-                "", // Contraseña vacía porque usamos datos biométricos
+                lessor.getPassword() != null ? lessor.getPassword() : "", // Contraseña
                 List.of(new SimpleGrantedAuthority("ROLE_LESSOR"))
         );
     }
@@ -61,7 +61,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         return new org.springframework.security.core.userdetails.User(
                 lessee.getEmail(), // Se usa email como identificador
-                "", // Contraseña vacía porque usamos datos biométricos
+                lessee.getPassword() != null ? lessee.getPassword() : "", // Contraseña
                 List.of(new SimpleGrantedAuthority("ROLE_LESSEE"))
         );
     }

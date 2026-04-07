@@ -14,11 +14,12 @@ import java.io.InputStream;
 @Configuration
 public class FirebaseConfig {
 
-    @Value("${firebase.credentials.path:classpath:firebase-adminsdk.json}")
+    @Value("${firebase.credentials.path}")
     private Resource firebaseCredentials;
 
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
+        System.out.println(firebaseCredentials.contentLength());
         if (FirebaseApp.getApps().isEmpty()) {
             InputStream serviceAccount = firebaseCredentials.getInputStream();
             FirebaseOptions options = FirebaseOptions.builder()

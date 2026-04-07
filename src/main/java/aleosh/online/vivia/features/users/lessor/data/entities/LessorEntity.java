@@ -34,6 +34,12 @@ public class LessorEntity {
     @Column(name = "company_name", nullable = false, unique = true)
     private String companyName;
 
+    @Column(name = "password")
+    private String password;
+
+    @Column(name = "phone_number", nullable = false, length = 10)
+    private String phoneNumber;
+
     @OneToMany(mappedBy = "lessor", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<PasskeyCredentialEntity> credentials = new ArrayList<>();

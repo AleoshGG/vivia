@@ -15,6 +15,7 @@ public class Lessee {
     private final byte[] userHandle;
     private final String username;
     private final String email;
+    private final String password;
     private final String fcmToken;
     private final List<PasskeyCredential> credentials;
     private final Set<UUID> followedLessorIds;
@@ -24,6 +25,7 @@ public class Lessee {
         this.userHandle = builder.userHandle;
         this.username = builder.username;
         this.email = builder.email;
+        this.password = builder.password;
         this.fcmToken = builder.fcmToken;
         this.credentials = builder.credentials != null ?
                 new ArrayList<>(builder.credentials) :
@@ -37,6 +39,7 @@ public class Lessee {
     public byte[] getUserHandle() { return userHandle; }
     public String getUsername() { return username; }
     public String getEmail() { return email; }
+    public String getPassword() { return password; }
     public String getFcmToken() { return fcmToken; }
     public List<PasskeyCredential> getCredentials() {
         return Collections.unmodifiableList(credentials);
@@ -48,6 +51,7 @@ public class Lessee {
         private byte[] userHandle;
         private String username;
         private String email;
+        private String password;
         private String fcmToken;
         private List<PasskeyCredential> credentials = new ArrayList<>();
         private Set<UUID> followedLessorIds = new HashSet<>();
@@ -56,6 +60,7 @@ public class Lessee {
         public Builder userHandle(byte[] userHandle) { this.userHandle = userHandle; return this; }
         public Builder username(String username) { this.username = username; return this; }
         public Builder email(String email) { this.email = email; return this; }
+        public Builder password(String password) { this.password = password; return this; }
         public Builder fcmToken(String fcmToken) { this.fcmToken = fcmToken; return this; }
 
         public Builder credentials(List<PasskeyCredential> credentials) {

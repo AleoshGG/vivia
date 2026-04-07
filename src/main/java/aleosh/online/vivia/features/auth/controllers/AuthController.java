@@ -1,11 +1,13 @@
 package aleosh.online.vivia.features.auth.controllers;
 
+import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.auth.data.dtos.request.VerifyLoginDto;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.auth.services.IAuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +41,18 @@ public class AuthController {
             @RequestBody VerifyLoginDto verifyLoginDto
     ) {
         AuthResponseDto authResponseDto = authService.finishLogin(verifyLoginDto);
+
+        return new BaseResponse<>(
+                true, authResponseDto, "Usuario logueado correctamente", HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(summary = "Inicio de sesión tradicional", description = "Autentica al usuario (correo para arrendatario, empresa para arrendador) y contraseña, devolviendo el JWT.")
+    @PostMapping(value = "/login", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> traditionalLogin(
+            @Valid @RequestBody LoginRequestDto loginDto
+    ) {
+        AuthResponseDto authResponseDto = authService.traditionalLogin(loginDto);
 
         return new BaseResponse<>(
                 true, authResponseDto, "Usuario logueado correctamente", HttpStatus.OK

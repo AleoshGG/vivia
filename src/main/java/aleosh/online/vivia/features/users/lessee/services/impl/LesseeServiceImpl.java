@@ -14,6 +14,7 @@ import aleosh.online.vivia.features.users.lessor.domain.entities.Lessor;
 import aleosh.online.vivia.features.users.lessor.domain.repositories.ILessorRepository;
 import com.yubico.webauthn.*;
 import com.yubico.webauthn.data.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import aleosh.online.vivia.features.users.lessee.data.dtos.response.LessorWithFollowStatusDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
+import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
+import java.util.UUID;
+
 @Service
 public class LesseeServiceImpl implements ILesseeService {
 
@@ -33,6 +39,7 @@ public class LesseeServiceImpl implements ILesseeService {
     private final LesseeMapper lesseeMapper;
     private final RelyingParty relyingParty;
     private final ILessorRepository lessorRepository;
+    private final PasswordEncoder passwordEncoder;
 
     private final Map<String, RegistrationRequestState> registrationCache = new ConcurrentHashMap<>();
 
@@ -41,13 +48,15 @@ public class LesseeServiceImpl implements ILesseeService {
             ILesseeRepository lesseeDomainRepository,
             @Qualifier("lesseeServiceMapper") LesseeMapper lesseeMapper,
             RelyingParty relyingParty,
-            ILessorRepository lessorRepository
+            ILessorRepository lessorRepository,
+            PasswordEncoder passwordEncoder
     ) {
         this.lesseeRepository = lesseeRepository;
         this.lesseeDomainRepository = lesseeDomainRepository;
         this.lesseeMapper = lesseeMapper;
         this.relyingParty = relyingParty;
         this.lessorRepository = lessorRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -111,6 +120,9 @@ public class LesseeServiceImpl implements ILesseeService {
             lesseeEntity.setUserHandle(pendingRequest.options.getUser().getId().getBytes());
             lesseeEntity.setUsername(originalDto.getUsername());
             lesseeEntity.setEmail(originalDto.getEmail());
+            if (originalDto.getPassword() != null) {
+                lesseeEntity.setPassword(passwordEncoder.encode(originalDto.getPassword()));
+            }
 
             PasskeyCredentialEntity credentialEntity = new PasskeyCredentialEntity();
             credentialEntity.setCredentialId(result.getKeyId().getId().getBytes());
@@ -191,5 +203,25 @@ public class LesseeServiceImpl implements ILesseeService {
                 .orElseThrow(() -> new RuntimeException("Arrendatario no encontrado"));
         lessee.setFcmToken(fcmToken);
         lesseeRepository.save(lessee);
+    }
+
+    @Override
+    public List<LessorWithFollowStatusDto> getAllLessorsWithFollowStatus(String email) {
+        LesseeEntity lessee = lesseeRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Arrendatario no encontrado"));
+
+        java.util.Set<UUID> followedIds = lessee.getFollowedLessors().stream()
+                .map(LessorEntity::getId)
+                .collect(Collectors.toSet());
+
+        return lessorRepository.getAllLessors().stream().map(lessor -> {
+            LessorResponseDto lessorDto = new LessorResponseDto();
+            lessorDto.setId(lessor.getId());
+            lessorDto.setFirstName(lessor.getFirstName());
+            lessorDto.setLastName(lessor.getLastName());
+            lessorDto.setCompanyName(lessor.getCompanyName());
+            
+            return new LessorWithFollowStatusDto(lessorDto, followedIds.contains(lessor.getId()));
+        }).collect(Collectors.toList());
     }
 }

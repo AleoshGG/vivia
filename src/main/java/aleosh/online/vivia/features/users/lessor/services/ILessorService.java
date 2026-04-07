@@ -5,6 +5,8 @@ import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerifyLessorR
 import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
 import java.util.List;
 
+import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
+
 public interface ILessorService {
     // Paso 1: Inicia el registro y devuelve las opciones WebAuthn (Challenge) en formato JSON
     String startRegistration(CreateLessorDto createLessorDto);
@@ -15,4 +17,5 @@ public interface ILessorService {
     LessorResponseDto getLessorByCompanyName(String companyName);
     LessorResponseDto getLessorByUsername(String username);
     List<LessorResponseDto> getAllLessors();
+    List<LesseeResponseDto> getFollowers(String companyName);
 }

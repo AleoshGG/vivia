@@ -20,4 +20,10 @@ public class CreateLessorDto {
 
     @Schema(description = "Nombre de la empresa único", example = "Rentas Ws")
     private String companyName;
+
+    @Schema(description = "Contraseña", example = "password123")
+    private String password;
+
+    @Schema(description = "Número de teléfono", example = "5564234321")
+    private String phoneNumber;
 }

@@ -18,7 +18,9 @@ public class LessorMapper {
                 .userHandle(lessorEntity.getUserHandle()) // Agregado
                 .firstName(lessorEntity.getFirstName())
                 .lastName(lessorEntity.getLastName())
-                .companyName(lessorEntity.getCompanyName());
+                .companyName(lessorEntity.getCompanyName())
+                .password(lessorEntity.getPassword())
+                .phoneNumber(lessorEntity.getPhoneNumber());
 
         // Iterar y mapear cada credencial de Entidad a Dominio
         if (lessorEntity.getCredentials() != null) {
@@ -39,6 +41,8 @@ public class LessorMapper {
         lessorEntity.setFirstName(lessor.getFirstName());
         lessorEntity.setLastName(lessor.getLastName());
         lessorEntity.setCompanyName(lessor.getCompanyName());
+        lessorEntity.setPassword(lessor.getPassword());
+        lessorEntity.setPhoneNumber(lessor.getPhoneNumber());
 
         // Iterar y mapear cada credencial de Dominio a Entidad
         if (lessor.getCredentials() != null) {

@@ -9,5 +9,4 @@ public interface ILessorRepository {
     Optional<Lessor> getByUsername(String Username);
     Optional<Lessor> getByCompanyName(String CompanyName);
     List<Lessor> getAllLessors();
-
 }

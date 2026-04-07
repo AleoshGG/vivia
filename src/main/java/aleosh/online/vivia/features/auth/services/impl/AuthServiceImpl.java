@@ -13,7 +13,10 @@ import com.yubico.webauthn.StartAssertionOptions;
 import com.yubico.webauthn.data.AuthenticatorAssertionResponse;
 import com.yubico.webauthn.data.ClientAssertionExtensionOutputs;
 import com.yubico.webauthn.data.PublicKeyCredential;
+import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -29,6 +32,7 @@ public class AuthServiceImpl implements IAuthService {
     private final RelyingParty relyingParty;
     private final UserDetailsServiceImpl userDetailsService;
     private final PasskeyCredentialRepository passkeyRepository;
+    private final AuthenticationManager authenticationManager;
 
     // Caché para los desafíos de login. La clave es el propio desafío en Base64Url
     private final Map<String, AssertionRequest> loginCache = new ConcurrentHashMap<>();
@@ -37,12 +41,14 @@ public class AuthServiceImpl implements IAuthService {
             JwtProvider jwtProvider,
             RelyingParty relyingParty,
             UserDetailsServiceImpl userDetailsService,
-            PasskeyCredentialRepository passkeyRepository
+            PasskeyCredentialRepository passkeyRepository,
+            AuthenticationManager authenticationManager
     ) {
         this.jwtProvider = jwtProvider;
         this.relyingParty = relyingParty;
         this.userDetailsService = userDetailsService;
         this.passkeyRepository = passkeyRepository;
+        this.authenticationManager = authenticationManager;
     }
 
     @Override
@@ -110,5 +116,17 @@ public class AuthServiceImpl implements IAuthService {
         } catch (Exception e) {
             throw new RuntimeException("Error en el proceso de autenticación WebAuthn", e);
         }
+    }
+
+    @Override
+    public AuthResponseDto traditionalLogin(LoginRequestDto loginDto) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginDto.getIdentifier(), loginDto.getPassword())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String jwt = jwtProvider.generateToken(authentication);
+        return new AuthResponseDto(jwt);
     }
 }

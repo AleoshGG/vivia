@@ -13,6 +13,7 @@ import aleosh.online.vivia.features.users.lessor.services.mappers.LessorMapper;
 import com.yubico.webauthn.RelyingParty;
 import org.springframework.stereotype.Service;
 //import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import com.yubico.webauthn.FinishRegistrationOptions;
 import com.yubico.webauthn.RegistrationResult;
 import com.yubico.webauthn.StartRegistrationOptions;
@@ -29,12 +30,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
+import aleosh.online.vivia.features.users.lessee.data.repositories.LesseeRepository;
+
 @Service
 public class LessorServiceImpl implements ILessorService {
 
     private final LessorRepository lessorRepository;
     private final LessorMapper lessorMapper;
     private final RelyingParty relyingParty;
+    private final PasswordEncoder passwordEncoder;
+    private final LesseeRepository lesseeRepository;
 
     /*private final IStorageService storageService;
 
@@ -46,11 +52,15 @@ public class LessorServiceImpl implements ILessorService {
     public LessorServiceImpl(
             LessorRepository lessorRepository,
             @org.springframework.beans.factory.annotation.Qualifier("lessorServiceMapper") LessorMapper lessorMapper,
-            RelyingParty relyingParty
+            RelyingParty relyingParty,
+            PasswordEncoder passwordEncoder,
+            LesseeRepository lesseeRepository
     ) {
         this.lessorRepository = lessorRepository;
         this.lessorMapper = lessorMapper;
         this.relyingParty = relyingParty;
+        this.passwordEncoder = passwordEncoder;
+        this.lesseeRepository = lesseeRepository;
     }
 
     @Override
@@ -112,6 +122,9 @@ public class LessorServiceImpl implements ILessorService {
             lessorEntity.setFirstName(originalDto.getFirstName());
             lessorEntity.setLastName(originalDto.getLastName());
             lessorEntity.setCompanyName(originalDto.getCompanyName());
+            if (originalDto.getPassword() != null) {
+                lessorEntity.setPassword(passwordEncoder.encode(originalDto.getPassword()));
+            }
 
             PasskeyCredentialEntity credentialEntity = new PasskeyCredentialEntity();
             credentialEntity.setCredentialId(result.getKeyId().getId().getBytes());
@@ -161,6 +174,22 @@ public class LessorServiceImpl implements ILessorService {
     public List<LessorResponseDto> getAllLessors() {
         return lessorRepository.findAll().stream()
                 .map(lessorMapper::toLessorResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<LesseeResponseDto> getFollowers(String companyName) {
+        LessorEntity lessor = lessorRepository.findByCompanyName(companyName)
+                .orElseThrow(() -> new RuntimeException("Arrendador no encontrado: " + companyName));
+
+        return lesseeRepository.findByFollowedLessors_Id(lessor.getId()).stream()
+                .map(lessee -> {
+                    LesseeResponseDto dto = new LesseeResponseDto();
+                    dto.setId(lessee.getId());
+                    dto.setUsername(lessee.getUsername());
+                    dto.setEmail(lessee.getEmail());
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 }

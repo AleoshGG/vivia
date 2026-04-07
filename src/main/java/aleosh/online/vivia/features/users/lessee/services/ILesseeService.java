@@ -4,6 +4,8 @@ import aleosh.online.vivia.features.users.lessee.data.dtos.request.CreateLesseeD
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.VerifyLesseeRegistrationDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
 
+import aleosh.online.vivia.features.users.lessee.data.dtos.response.LessorWithFollowStatusDto;
+
 import java.util.List;
 
 public interface ILesseeService {
@@ -14,4 +16,5 @@ public interface ILesseeService {
     List<LesseeResponseDto> getAllLessees();
     void followLessor(String lesseeEmail, String lessorCompanyName);
     void updateFcmToken(String email, String fcmToken);
+    List<LessorWithFollowStatusDto> getAllLessorsWithFollowStatus(String email);
 }

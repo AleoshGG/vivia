@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
+
 @RestController
 @RequestMapping("/lessors")
 @Tag(name = "Gestión de arrendadores", description = "Endpoints para crear, listar y buscar arrendadores.")
@@ -101,6 +103,21 @@ public class LessorController {
 
         return new BaseResponse<>(
                 true, lessor, "Arrendador obtenido correctamente", HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(summary = "Obtener seguidores", description = "Devuelve una lista con todos los arrendatarios que siguen al arrendador autenticado.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente")
+    })
+    @PreAuthorize("hasRole('LESSOR')")
+    @GetMapping(value = "/followers", produces = "application/json")
+    public ResponseEntity<BaseResponse<List<LesseeResponseDto>>> getFollowers() {
+        String currentCompanyName = SecurityContextHolder.getContext().getAuthentication().getName();
+        List<LesseeResponseDto> followers = lessorService.getFollowers(currentCompanyName);
+
+        return new BaseResponse<>(
+                true, followers, "Seguidores obtenidos correctamente", HttpStatus.OK
         ).buildResponseEntity();
     }
 

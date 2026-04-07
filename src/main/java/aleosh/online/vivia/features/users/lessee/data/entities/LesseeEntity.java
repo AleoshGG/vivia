@@ -34,6 +34,9 @@ public class LesseeEntity {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
+    @Column(name = "password")
+    private String password;
+
     @Column(name = "fcm_token")
     private String fcmToken;
 
