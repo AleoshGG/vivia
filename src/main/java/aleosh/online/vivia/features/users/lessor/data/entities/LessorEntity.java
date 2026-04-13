@@ -37,7 +37,7 @@ public class LessorEntity {
     @Column(name = "password")
     private String password;
 
-    @Column(name = "phone_number", nullable = false, length = 10)
+    @Column(name = "phone_number", nullable = false, length = 11)
     private String phoneNumber;
 
     @OneToMany(mappedBy = "lessor", cascade = CascadeType.ALL, orphanRemoval = true)
