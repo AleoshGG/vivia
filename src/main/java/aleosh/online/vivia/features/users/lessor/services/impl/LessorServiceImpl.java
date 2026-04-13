@@ -122,6 +122,7 @@ public class LessorServiceImpl implements ILessorService {
             lessorEntity.setFirstName(originalDto.getFirstName());
             lessorEntity.setLastName(originalDto.getLastName());
             lessorEntity.setCompanyName(originalDto.getCompanyName());
+            lessorEntity.setPhoneNumber(originalDto.getPhoneNumber());
             if (originalDto.getPassword() != null) {
                 lessorEntity.setPassword(passwordEncoder.encode(originalDto.getPassword()));
             }
