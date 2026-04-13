@@ -15,6 +15,7 @@ public class LessorMapper {
         dto.setFirstName(lessorEntity.getFirstName());
         dto.setLastName(lessorEntity.getLastName());
         dto.setCompanyName(lessorEntity.getCompanyName());
+        dto.setPhoneNumber(lessorEntity.getPhoneNumber());
         return dto;
     }
 
