@@ -220,6 +220,7 @@ public class LesseeServiceImpl implements ILesseeService {
             lessorDto.setFirstName(lessor.getFirstName());
             lessorDto.setLastName(lessor.getLastName());
             lessorDto.setCompanyName(lessor.getCompanyName());
+            lessorDto.setPhoneNumber(lessor.getPhoneNumber());
             
             return new LessorWithFollowStatusDto(lessorDto, followedIds.contains(lessor.getId()));
         }).collect(Collectors.toList());
