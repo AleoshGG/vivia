@@ -2,6 +2,7 @@ package aleosh.online.vivia.features.properties.properties.services.impl;
 
 import aleosh.online.vivia.features.properties.address.data.entities.AddressEntity;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyEntity;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyImageEntity;
@@ -11,6 +12,7 @@ import aleosh.online.vivia.features.properties.properties.services.IPropertyServ
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import aleosh.online.vivia.features.users.lessor.data.repositories.LessorRepository;
 import aleosh.online.vivia.features.users.lessor.services.IStorageService;
+import aleosh.online.vivia.features.users.lessor.services.mappers.LessorMapper;
 import aleosh.online.vivia.features.users.lessee.data.repositories.LesseeRepository;
 import aleosh.online.vivia.features.notifications.services.INotificationService;
 import jakarta.transaction.Transactional;
@@ -36,6 +38,7 @@ public class PropertyServiceImpl implements IPropertyService {
     private final IStorageService s3StorageService;
     private final LesseeRepository lesseeRepository;
     private final INotificationService notificationService;
+    private final LessorMapper lessorMapper;
 
     @Override
     public List<PropertyResponseDto> getPropertiesByLessorId(UUID lessorId) {
@@ -70,6 +73,13 @@ public class PropertyServiceImpl implements IPropertyService {
         return propertyPage.map(this::mapToResponseDto);
     }
 
+    @Override
+    public PropertyDetailResponseDto getPropertyById(UUID id) {
+        PropertyEntity property = propertyRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Propiedad no encontrada"));
+        return mapToDetailResponseDto(property);
+    }
+
     private PropertyResponseDto mapToResponseDto(PropertyEntity property) {
         List<String> imageUrls = property.getImages().stream()
                 .map(PropertyImageEntity::getUrl)
@@ -94,6 +104,26 @@ public class PropertyServiceImpl implements IPropertyService {
                 .bathroomsNumber(property.getBathroomsNumber())
                 .parkingNumber(property.getParkingNumber())
                 .lessorId(property.getLessor().getId())
+                .imageUrls(imageUrls)
+                .build();
+    }
+
+    private PropertyDetailResponseDto mapToDetailResponseDto(PropertyEntity property) {
+        List<String> imageUrls = property.getImages().stream()
+                .map(PropertyImageEntity::getUrl)
+                .collect(Collectors.toList());
+
+        return PropertyDetailResponseDto.builder()
+                .id(property.getId())
+                .title(property.getTitle())
+                .description(property.getDescription())
+                .price(property.getPrice())
+                .departmentType(property.getDepartmentType())
+                .area(property.getArea())
+                .roomsNumber(property.getRoomsNumber())
+                .bathroomsNumber(property.getBathroomsNumber())
+                .parkingNumber(property.getParkingNumber())
+                .lessor(lessorMapper.toLessorResponseDto(property.getLessor()))
                 .imageUrls(imageUrls)
                 .build();
     }

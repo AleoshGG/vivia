@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.properties.properties.services;
 
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,4 +16,5 @@ public interface IPropertyService {
     List<PropertyResponseDto> getPropertiesByLessorCompanyName(String companyName);
     void deleteProperty(UUID id, String companyName);
     Page<PropertyResponseDto> getAllProperties(int page, int size);
+    PropertyDetailResponseDto getPropertyById(UUID id);
 }

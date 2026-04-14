@@ -2,6 +2,7 @@ package aleosh.online.vivia.features.properties.properties.controllers;
 
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.services.IPropertyService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,6 +45,19 @@ public class PropertyController {
         Page<PropertyResponseDto> properties = propertyService.getAllProperties(page, size);
         return new BaseResponse<>(
                 true, properties, "Propiedades obtenidas correctamente", HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(summary = "Obtener detalle de una propiedad", description = "Devuelve el detalle de una propiedad y la información del arrendador.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Propiedad obtenida correctamente"),
+            @ApiResponse(responseCode = "404", description = "Propiedad no encontrada", content = @Content)
+    })
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseResponse<PropertyDetailResponseDto>> getPropertyById(@PathVariable UUID id) {
+        PropertyDetailResponseDto property = propertyService.getPropertyById(id);
+        return new BaseResponse<>(
+                true, property, "Propiedad obtenida correctamente", HttpStatus.OK
         ).buildResponseEntity();
     }
 
