@@ -4,7 +4,6 @@ import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
 import aleosh.online.vivia.features.users.lessee.domain.entities.Lessee;
 import aleosh.online.vivia.features.users.lessor.data.entities.PasskeyCredentialEntity;
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
-import aleosh.online.vivia.features.users.lessor.domain.valueobjects.PasskeyCredential;
 import org.springframework.stereotype.Component;
 
 import java.util.Base64;
