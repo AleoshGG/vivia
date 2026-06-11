@@ -2,7 +2,6 @@ package aleosh.online.vivia.features.users.lessee.data.mappers;
 
 import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
 import aleosh.online.vivia.features.users.lessee.domain.entities.Lessee;
-import aleosh.online.vivia.features.users.lessor.data.entities.PasskeyCredentialEntity;
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import org.springframework.stereotype.Component;
 

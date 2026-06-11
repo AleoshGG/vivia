@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS credentials (
 
     PRIMARY KEY (id),
 
-    CONSTRAINT chk_credential_type CHECK (credential_type IN ('password', 'google', 'biometric')),
+    CONSTRAINT chk_credential_type CHECK (credential_type IN ('PASSWORD', 'GOOGLE', 'BIOMETRIC')),
     CONSTRAINT fk_credentials_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

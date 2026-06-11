@@ -9,7 +9,6 @@ import aleosh.online.vivia.features.users.lessee.domain.entities.Lessee;
 import aleosh.online.vivia.features.users.lessee.domain.repositories.ILesseeRepository;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
 import aleosh.online.vivia.features.users.lessee.services.mappers.LesseeMapper;
-import aleosh.online.vivia.features.users.lessor.data.entities.PasskeyCredentialEntity;
 import aleosh.online.vivia.features.users.lessor.domain.entities.Lessor;
 import aleosh.online.vivia.features.users.lessor.domain.repositories.ILessorRepository;
 import com.yubico.webauthn.*;

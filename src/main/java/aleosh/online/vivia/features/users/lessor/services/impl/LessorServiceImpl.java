@@ -4,7 +4,6 @@ import aleosh.online.vivia.features.users.lessor.data.dtos.request.CreateLessorD
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerifyLessorRegistrationDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
-import aleosh.online.vivia.features.users.lessor.data.entities.PasskeyCredentialEntity;
 import aleosh.online.vivia.features.users.lessor.data.repositories.LessorRepository;
 import aleosh.online.vivia.features.users.lessor.services.ILessorService;
 //import aleosh.online.vivia.features.users.lessor.services.IStorageService;
