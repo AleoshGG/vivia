@@ -8,6 +8,5 @@ public interface IUserRepository {
 
     User save(User user);
     void deleteById(UUID id);
-
-
-}
+    boolean existsByEmail(String email);
+    }

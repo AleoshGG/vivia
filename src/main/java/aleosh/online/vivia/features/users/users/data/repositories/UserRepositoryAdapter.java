@@ -45,4 +45,9 @@ public class UserRepositoryAdapter implements IUserRepository {
         }
         userRepository.deleteById(id);
     }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
 }
