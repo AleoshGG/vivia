@@ -2,10 +2,7 @@ package aleosh.online.vivia.features.users.lessor.data.entities;
 
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 
 import java.sql.Types;
@@ -27,6 +24,8 @@ public class LessorEntity {
     @OneToOne
     @MapsId
     @JoinColumn(name = "user_id")
+    @ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private UserEntity user;
 
     @Column(name = "phone_number", nullable = false, length = 15)

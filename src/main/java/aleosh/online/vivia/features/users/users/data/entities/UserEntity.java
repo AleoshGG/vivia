@@ -63,9 +63,13 @@ public class UserEntity {
     private List<CredentialEntity> credentials = new ArrayList<>();
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private LessorEntity lessor;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private LesseeEntity lessee;
 
 }

@@ -2,10 +2,7 @@ package aleosh.online.vivia.features.users.lessee.data.entities;
 
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 
 import java.math.BigDecimal;
@@ -28,6 +25,8 @@ public class LesseeEntity {
     @OneToOne
     @MapsId
     @JoinColumn(name = "user_id")
+    @ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private UserEntity user;
 
     @Column(name = "latitude", precision = 12, scale = 9)

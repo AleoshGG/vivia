@@ -1,10 +1,13 @@
 package aleosh.online.vivia.features.users.lessee.controllers;
 
 import aleosh.online.vivia.core.dtos.BaseResponse;
+import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.CreateLesseeDto;
+import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseePasswordDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.VerifyLesseeRegistrationDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +39,19 @@ public class LesseeController {
         this.lesseeService = lesseeService;
     }
 
+    @Operation(summary = "Registro con Contraseña",
+            description = "Registra un nuevo arrendatario utilizando correo y contraseña. Devuelve los tokens de sesión inmediatamente.")
+    @PostMapping(value = "/password", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> registerWithPassword(
+            @Valid @RequestBody RegisterLesseePasswordDto requestDto
+    ) {
+        AuthResponseDto authResponseDto = lesseeService.registerWithPassword(requestDto);
+
+        return new BaseResponse<>(
+                true, authResponseDto, "Arrendatario registrado y logueado exitosamente", HttpStatus.CREATED
+        ).buildResponseEntity();
+    }
+    /*
     @Operation(summary = "Paso 1: Solicitar desafío de registro",
             description = "Inicia el registro del arrendatario y devuelve un JSON con el desafío (Challenge) para crear la Passkey.")
     @PostMapping(value = "/register/challenge", consumes = "application/json", produces = "application/json")
@@ -126,6 +143,6 @@ public class LesseeController {
         return new BaseResponse<>(
                 true, lessors, "Arrendadores obtenidos correctamente", HttpStatus.OK
         ).buildResponseEntity();
-    }
+    }*/
 
 }

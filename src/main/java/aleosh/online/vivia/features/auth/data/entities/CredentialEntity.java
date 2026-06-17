@@ -32,6 +32,8 @@ public class CredentialEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JdbcTypeCode(Types.VARCHAR)
+    @lombok.ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private UserEntity user;
 
     @Enumerated(EnumType.STRING)
