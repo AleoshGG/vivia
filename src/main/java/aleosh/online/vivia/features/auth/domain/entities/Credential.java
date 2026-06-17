@@ -31,7 +31,7 @@ public class Credential {
     public UUID getUserId() { return userId; }
     public CredentialType getCredentialType() { return credentialType; }
     public String getProviderCredentialId() { return providerCredentialId; }
-    public  String getSecretData() { return secretData; }
+    public String getSecretData() { return secretData; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
 

@@ -3,225 +3,50 @@ package aleosh.online.vivia.features.users.lessee.services.impl;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.CreateLesseeDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.VerifyLesseeRegistrationDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
-import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
-import aleosh.online.vivia.features.users.lessee.data.repositories.LesseeRepository;
-import aleosh.online.vivia.features.users.lessee.domain.entities.Lessee;
-import aleosh.online.vivia.features.users.lessee.domain.repositories.ILesseeRepository;
+import aleosh.online.vivia.features.users.lessee.data.dtos.response.LessorWithFollowStatusDto;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
-import aleosh.online.vivia.features.users.lessee.services.mappers.LesseeMapper;
-import aleosh.online.vivia.features.users.lessor.domain.entities.Lessor;
-import aleosh.online.vivia.features.users.lessor.domain.repositories.ILessorRepository;
-import com.yubico.webauthn.*;
-import com.yubico.webauthn.data.*;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import aleosh.online.vivia.features.users.lessee.data.dtos.response.LessorWithFollowStatusDto;
-import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
-import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
-import java.util.UUID;
 
 @Service
 public class LesseeServiceImpl implements ILesseeService {
 
-    private final LesseeRepository lesseeRepository;
-    private final ILesseeRepository lesseeDomainRepository;
-    private final LesseeMapper lesseeMapper;
-    private final RelyingParty relyingParty;
-    private final ILessorRepository lessorRepository;
-    private final PasswordEncoder passwordEncoder;
-
-    private final Map<String, RegistrationRequestState> registrationCache = new ConcurrentHashMap<>();
-
-    public LesseeServiceImpl(
-            LesseeRepository lesseeRepository,
-            ILesseeRepository lesseeDomainRepository,
-            @Qualifier("lesseeServiceMapper") LesseeMapper lesseeMapper,
-            RelyingParty relyingParty,
-            ILessorRepository lessorRepository,
-            PasswordEncoder passwordEncoder
-    ) {
-        this.lesseeRepository = lesseeRepository;
-        this.lesseeDomainRepository = lesseeDomainRepository;
-        this.lesseeMapper = lesseeMapper;
-        this.relyingParty = relyingParty;
-        this.lessorRepository = lessorRepository;
-        this.passwordEncoder = passwordEncoder;
+    @Override
+    public String startRegistration(CreateLesseeDto createLesseeDto) {
+        return null;
     }
 
     @Override
-    public String startRegistration(CreateLesseeDto dto) {
-        if (lesseeRepository.findByUsername(dto.getUsername()).isPresent()) {
-            throw new RuntimeException("El arrendatario con este nombre de usuario ya existe.");
-        }
-        if (lesseeRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new RuntimeException("El arrendatario con este correo ya existe.");
-        }
-
-        // Generamos un ID interno único para la identidad WebAuthn
-        byte[] userHandle = new byte[32];
-        new SecureRandom().nextBytes(userHandle);
-
-        UserIdentity userIdentity = UserIdentity.builder()
-                .name(dto.getEmail())
-                .displayName(dto.getUsername())
-                .id(new ByteArray(userHandle))
-                .build();
-
-        StartRegistrationOptions startOpts = StartRegistrationOptions.builder()
-                .user(userIdentity)
-                .build();
-
-        // El motor criptográfico genera el desafío y los parámetros
-        PublicKeyCredentialCreationOptions options = relyingParty.startRegistration(startOpts);
-
-        // Almacenamos el estado pendiente vinculado al nombre de usuario
-        registrationCache.put(dto.getEmail(), new RegistrationRequestState(dto, options));
-
-        try {
-            // Devolvemos las opciones serializadas para que la app móvil inicie el escáner de huellas
-            return options.toCredentialsCreateJson();
-        } catch (Exception e) {
-            throw new RuntimeException("Error al generar las opciones de registro WebAuthn", e);
-        }
-    }
-
-    @Override
-    public LesseeResponseDto finishRegistration(VerifyLesseeRegistrationDto verifyDto) {
-        RegistrationRequestState pendingRequest = registrationCache.get(verifyDto.getEmail());
-        if (pendingRequest == null) {
-            throw new RuntimeException("No hay un proceso de registro activo para este usuario o el desafío ha expirado.");
-        }
-
-        try {
-            // 1. Parsear el JSON recibido del celular
-            PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs> pkc =
-                    PublicKeyCredential.parseRegistrationResponseJson(verifyDto.getCredentialResponseJson());
-
-            // 2. Ejecutar la validación criptográfica contra el desafío original guardado en caché
-            RegistrationResult result = relyingParty.finishRegistration(FinishRegistrationOptions.builder()
-                    .request(pendingRequest.options)
-                    .response(pkc)
-                    .build());
-
-            // 3. Si no se lanzó excepción, la biometría es válida. Procedemos a crear las entidades.
-            CreateLesseeDto originalDto = pendingRequest.originalDto;
-            LesseeEntity lesseeEntity = new LesseeEntity();
-            lesseeEntity.setUserHandle(pendingRequest.options.getUser().getId().getBytes());
-            lesseeEntity.setUsername(originalDto.getUsername());
-            lesseeEntity.setEmail(originalDto.getEmail());
-            if (originalDto.getPassword() != null) {
-                lesseeEntity.setPassword(passwordEncoder.encode(originalDto.getPassword()));
-            }
-
-            PasskeyCredentialEntity credentialEntity = new PasskeyCredentialEntity();
-            credentialEntity.setCredentialId(result.getKeyId().getId().getBytes());
-            credentialEntity.setPublicKey(result.getPublicKeyCose().getBytes());
-            credentialEntity.setSignCount(result.getSignatureCount());
-
-            lesseeEntity.addCredential(credentialEntity);
-
-            LesseeEntity savedLesseeEntity = lesseeRepository.save(lesseeEntity);
-
-            // 4. Limpiar la caché temporal
-            registrationCache.remove(verifyDto.getEmail());
-
-            return lesseeMapper.toLesseeResponseDto(savedLesseeEntity);
-
-        } catch (Exception e) {
-            throw new RuntimeException("Fallo en la validación criptográfica de la credencial", e);
-        }
-    }
-
-    // Clase interna para manejar el estado temporal
-    private static class RegistrationRequestState {
-        final CreateLesseeDto originalDto;
-        final PublicKeyCredentialCreationOptions options;
-
-        RegistrationRequestState(CreateLesseeDto originalDto, PublicKeyCredentialCreationOptions options) {
-            this.originalDto = originalDto;
-            this.options = options;
-        }
+    public LesseeResponseDto finishRegistration(VerifyLesseeRegistrationDto verifyLesseeRegistrationDto) {
+        return null;
     }
 
     @Override
     public LesseeResponseDto getLesseeByUsername(String username) {
-        return lesseeRepository.findByUsername(username)
-                .map(lesseeMapper::toLesseeResponseDto)
-                .orElseThrow(() -> new RuntimeException("No existe el arrendatario"));
+        return null;
     }
 
     @Override
     public LesseeResponseDto getLesseeByEmail(String email) {
-        return lesseeRepository.findByEmail(email)
-                .map(lesseeMapper::toLesseeResponseDto)
-                .orElseThrow(() -> new RuntimeException("No existe el arrendatario"));
+        return null;
     }
 
     @Override
     public List<LesseeResponseDto> getAllLessees() {
-        return lesseeRepository.findAll().stream()
-                .map(lesseeMapper::toLesseeResponseDto)
-                .collect(Collectors.toList());
+        return null;
     }
 
     @Override
     public void followLessor(String lesseeEmail, String lessorCompanyName) {
-        Lessee lessee = lesseeDomainRepository.getByEmail(lesseeEmail)
-                .orElseThrow(() -> new RuntimeException("Arrendatario no encontrado"));
-
-        Lessor lessor = lessorRepository.getByCompanyName(lessorCompanyName)
-                .orElseThrow(() -> new RuntimeException("Arrendador no encontrado"));
-
-        // SOLUCIÓN: Envolvemos las colecciones para hacerlas mutables
-        Lessee updatedLessee = Lessee.builder()
-                .id(lessee.getId())
-                .userHandle(lessee.getUserHandle())
-                .username(lessee.getUsername())
-                .email(lessee.getEmail())
-                .credentials(new ArrayList<>(lessee.getCredentials())) // Evita el mismo error con las credenciales
-                .followedLessorIds(new HashSet<>(lessee.getFollowedLessorIds())) // <--- EL FIX ESTÁ AQUÍ
-                .addFollowedLessorId(lessor.getId())
-                .build();
-
-        lesseeDomainRepository.save(updatedLessee);
     }
 
     @Override
     public void updateFcmToken(String email, String fcmToken) {
-        LesseeEntity lessee = lesseeRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Arrendatario no encontrado"));
-        lessee.setFcmToken(fcmToken);
-        lesseeRepository.save(lessee);
     }
 
     @Override
     public List<LessorWithFollowStatusDto> getAllLessorsWithFollowStatus(String email) {
-        LesseeEntity lessee = lesseeRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Arrendatario no encontrado"));
-
-        java.util.Set<UUID> followedIds = lessee.getFollowedLessors().stream()
-                .map(LessorEntity::getId)
-                .collect(Collectors.toSet());
-
-        return lessorRepository.getAllLessors().stream().map(lessor -> {
-            LessorResponseDto lessorDto = new LessorResponseDto();
-            lessorDto.setId(lessor.getId());
-            lessorDto.setFirstName(lessor.getFirstName());
-            lessorDto.setLastName(lessor.getLastName());
-            lessorDto.setCompanyName(lessor.getCompanyName());
-            lessorDto.setPhoneNumber(lessor.getPhoneNumber());
-            
-            return new LessorWithFollowStatusDto(lessorDto, followedIds.contains(lessor.getId()));
-        }).collect(Collectors.toList());
+        return null;
     }
 }

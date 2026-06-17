@@ -29,16 +29,21 @@ public class JwtProvider {
     private int expiration;
 
     public String generateToken(Authentication authentication) {
-        UserDetails mainUser = (UserDetails) authentication.getPrincipal();
+        String username;
+        if (authentication.getPrincipal() instanceof UserDetails userDetails) {
+            username = userDetails.getUsername();
+        } else {
+            username = authentication.getPrincipal().toString();
+        }
 
         // Extraemos el rol principal del usuario (ROLE_LESSOR o ROLE_LESSEE)
-        String role = mainUser.getAuthorities().stream()
+        String role = authentication.getAuthorities().stream()
                 .findFirst()
                 .map(GrantedAuthority::getAuthority)
                 .orElse("ROLE_USER");
 
         return Jwts.builder()
-                .setSubject(mainUser.getUsername()) // Guardará el companyName o el email
+                .setSubject(username) // Guardará el companyName o el email
                 .claim("role", role) // Agregamos el rol al payload del token
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(new Date().getTime() + expiration * 1000L))

@@ -7,8 +7,4 @@ import java.util.List;
 import java.util.UUID;
 
 public interface LesseeRepository extends JpaRepository<LesseeEntity, UUID> {
-    Optional<LesseeEntity> findByUsername(String username);
-    Optional<LesseeEntity> findByEmail(String email);
-    Optional<LesseeEntity> findByUserHandle(byte[] userHandle);
-    List<LesseeEntity> findByFollowedLessors_Id(UUID lessorId);
 }

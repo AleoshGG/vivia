@@ -4,7 +4,6 @@ import aleosh.online.vivia.core.config.jwt.JwtProvider;
 import aleosh.online.vivia.features.auth.data.dtos.request.VerifyLoginDto;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.auth.services.IAuthService;
-import aleosh.online.vivia.features.users.lessor.data.repositories.PasskeyCredentialRepository;
 import com.yubico.webauthn.AssertionRequest;
 import com.yubico.webauthn.AssertionResult;
 import com.yubico.webauthn.FinishAssertionOptions;
@@ -33,7 +32,7 @@ public class AuthServiceImpl implements IAuthService {
     private final JwtProvider jwtProvider;
     private final RelyingParty relyingParty;
     private final UserDetailsServiceImpl userDetailsService;
-    private final PasskeyCredentialRepository passkeyRepository;
+    //private final PasskeyCredentialRepository passkeyRepository;
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
 
@@ -44,14 +43,14 @@ public class AuthServiceImpl implements IAuthService {
             JwtProvider jwtProvider,
             RelyingParty relyingParty,
             UserDetailsServiceImpl userDetailsService,
-            PasskeyCredentialRepository passkeyRepository,
+            /*PasskeyCredentialRepository passkeyRepository,*/ 
             AuthenticationManager authenticationManager,
             RefreshTokenService refreshTokenService
     ) {
         this.jwtProvider = jwtProvider;
         this.relyingParty = relyingParty;
         this.userDetailsService = userDetailsService;
-        this.passkeyRepository = passkeyRepository;
+        //this.passkeyRepository = passkeyRepository;
         this.authenticationManager = authenticationManager;
         this.refreshTokenService = refreshTokenService;
     }
@@ -94,10 +93,10 @@ public class AuthServiceImpl implements IAuthService {
 
             if (result.isSuccess()) {
                 // Actualizamos el contador de firmas (prevención de ataques de clonación)
-                passkeyRepository.findById(result.getCredential().getCredentialId().getBytes()).ifPresent(cred -> {
-                    cred.setSignCount(result.getSignatureCount());
-                    passkeyRepository.save(cred);
-                });
+                //passkeyRepository.findById...
+                    //cred.setSignCount...
+                    //passkeyRepository.save(cred);
+                //});
 
                 loginCache.remove(challengeId);
 

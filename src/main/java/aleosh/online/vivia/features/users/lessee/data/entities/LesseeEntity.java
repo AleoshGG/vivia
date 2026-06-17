@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 
+import java.math.BigDecimal;
 import java.sql.Types;
 import java.util.UUID;
 
@@ -29,10 +30,10 @@ public class LesseeEntity {
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    @Column(name = "latitude")
-    private Double latitude;
+    @Column(name = "latitude", precision = 12, scale = 9)
+    private BigDecimal latitude;
 
-    @Column(name = "longitude")
-    private Double longitude;
+    @Column(name = "longitude", precision = 12, scale = 9)
+    private BigDecimal longitude;
 
 }
