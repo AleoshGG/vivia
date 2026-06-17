@@ -52,7 +52,7 @@ public class AuthController {
         ).buildResponseEntity();
     }
 
-    @Operation(summary = "Inicio de sesión tradicional", description = "Autentica al usuario (correo para arrendatario, empresa para arrendador) y contraseña, devolviendo el JWT.")
+    @Operation(summary = "Inicio de sesión tradicional", description = "Autentica al correo y contraseña, devolviendo el JWT.")
     @PostMapping(value = "/login", consumes = "application/json", produces = "application/json")
     public ResponseEntity<BaseResponse<AuthResponseDto>> traditionalLogin(
             @Valid @RequestBody LoginRequestDto loginDto
