@@ -4,7 +4,12 @@ import aleosh.online.vivia.core.config.jwt.JwtProvider;
 import aleosh.online.vivia.features.auth.data.dtos.request.GoogleLoginRequestDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.VerifyLoginDto;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
+import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
+import aleosh.online.vivia.features.auth.data.repositories.CredentialRepository;
+import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.auth.services.IAuthService;
+import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.yubico.webauthn.AssertionRequest;
 import com.yubico.webauthn.AssertionResult;
 import com.yubico.webauthn.FinishAssertionOptions;
@@ -19,11 +24,13 @@ import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,6 +44,7 @@ public class AuthServiceImpl implements IAuthService {
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenServiceImpl refreshTokenServiceImpl;
     private final GoogleTokenVerifierServiceImpl googleTokenVerifierService;
+    private final CredentialRepository credentialRepository;
 
     // Caché para los desafíos de login. La clave es el propio desafío en Base64Url
     private final Map<String, AssertionRequest> loginCache = new ConcurrentHashMap<>();
@@ -48,7 +56,8 @@ public class AuthServiceImpl implements IAuthService {
             /*PasskeyCredentialRepository passkeyRepository,*/ 
             AuthenticationManager authenticationManager,
             RefreshTokenServiceImpl refreshTokenServiceImpl,
-            GoogleTokenVerifierServiceImpl googleTokenVerifierService
+            GoogleTokenVerifierServiceImpl googleTokenVerifierService,
+            CredentialRepository credentialRepository
     ) {
         this.jwtProvider = jwtProvider;
         this.relyingParty = relyingParty;
@@ -57,6 +66,7 @@ public class AuthServiceImpl implements IAuthService {
         this.authenticationManager = authenticationManager;
         this.refreshTokenServiceImpl = refreshTokenServiceImpl;
         this.googleTokenVerifierService = googleTokenVerifierService;
+        this.credentialRepository = credentialRepository;
     }
 
     @Override
@@ -131,6 +141,7 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponseDto traditionalLogin(LoginRequestDto loginDto) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDto.getIdentifier(), loginDto.getPassword())
@@ -147,8 +158,50 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponseDto googleLogin(GoogleLoginRequestDto googleLoginDto) {
-        return null;
+        GoogleIdToken.Payload payload = googleTokenVerifierService.verifyIdToken(googleLoginDto.getIdToken());
+
+        String googleId = payload.getSubject();
+        String email = payload.getEmail();
+
+        // Cargar credencial con user, lessor y lessee en una sola query optimizada
+        CredentialEntity credentialEntity = credentialRepository
+                .findByProviderCredentialIdAndCredentialTypeWithUser(googleId, CredentialType.GOOGLE)
+                .orElseThrow(() -> new RuntimeException(
+                    "No existe una cuenta vinculada a este Google ID. Por favor, regístrate primero."
+                ));
+
+        // Obtener el usuario y determinar el rol real desde la base de datos
+        UserEntity userEntity = credentialEntity.getUser();
+
+        String roleFromDB;
+        if (userEntity.getLessor() != null) {
+            roleFromDB = "ROLE_LESSOR";
+        } else if (userEntity.getLessee() != null) {
+            roleFromDB = "ROLE_LESSEE";
+        } else {
+            throw new RuntimeException("El usuario no tiene un rol asignado");
+        }
+
+        // Validar que el rol enviado por el cliente coincide con el de la BD
+        if (!roleFromDB.equals(googleLoginDto.getRole())) {
+            throw new RuntimeException(
+                "El rol proporcionado (" + googleLoginDto.getRole() +
+                ") no coincide con el rol del usuario registrado (" + roleFromDB + ")"
+            );
+        }
+
+        var authorities = Collections.singletonList(new SimpleGrantedAuthority(roleFromDB));
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                email, null, authorities
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        String jwt = jwtProvider.generateToken(auth);
+        RefreshTokenEntity refreshToken = refreshTokenServiceImpl.createRefreshToken(email, roleFromDB);
+
+        return new AuthResponseDto(jwt, refreshToken.getToken());
     }
 
     @Override

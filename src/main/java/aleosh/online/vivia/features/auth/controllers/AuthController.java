@@ -1,5 +1,6 @@
 package aleosh.online.vivia.features.auth.controllers;
 
+import aleosh.online.vivia.features.auth.data.dtos.request.GoogleLoginRequestDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.RefreshTokenRequestDto;
 import aleosh.online.vivia.core.dtos.BaseResponse;
@@ -61,6 +62,19 @@ public class AuthController {
 
         return new BaseResponse<>(
                 true, authResponseDto, "Usuario logueado correctamente", HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(summary = "Inicio de sesión con Google",
+            description = "Autentica un usuario existente usando su cuenta de Google.")
+    @PostMapping(value = "/login/google", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> googleLogin(
+            @Valid @RequestBody GoogleLoginRequestDto requestDto
+    ) {
+        AuthResponseDto authResponseDto = authService.googleLogin(requestDto);
+
+        return new BaseResponse<>(
+                true, authResponseDto, "Usuario autenticado con Google", HttpStatus.OK
         ).buildResponseEntity();
     }
 
