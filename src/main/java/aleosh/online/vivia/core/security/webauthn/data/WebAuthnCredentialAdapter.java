@@ -2,6 +2,8 @@ package aleosh.online.vivia.core.security.webauthn.data;
 
 import aleosh.online.vivia.features.auth.data.entities.WebAuthnCredentialEntity;
 import aleosh.online.vivia.features.auth.data.repositories.WebAuthnCredentialRepository;
+import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
+import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
 import com.yubico.webauthn.CredentialRepository;
 import com.yubico.webauthn.RegisteredCredential;
 import com.yubico.webauthn.data.ByteArray;
@@ -10,30 +12,52 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Transactional(readOnly = true)
 @Component
 public class WebAuthnCredentialAdapter implements CredentialRepository {
 
     private final WebAuthnCredentialRepository webAuthnCredentialRepository;
+    private final UserRepository userRepository;
 
-    public WebAuthnCredentialAdapter(WebAuthnCredentialRepository webAuthnCredentialRepository) {
+    public WebAuthnCredentialAdapter(
+            WebAuthnCredentialRepository webAuthnCredentialRepository,
+            UserRepository userRepository
+    ) {
         this.webAuthnCredentialRepository = webAuthnCredentialRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
     public Set<PublicKeyCredentialDescriptor> getCredentialIdsForUsername(String username) {
-        // No usado en modo "discoverable credentials" (solo huella sin username)
-        return Set.of();
+        // Buscar usuario por email (username)
+        Optional<UserEntity> userOpt = userRepository.findByEmail(username);
+
+        if (userOpt.isEmpty()) {
+            return Set.of();
+        }
+
+        // Buscar todas las credenciales WebAuthn del usuario
+        List<WebAuthnCredentialEntity> credentials = webAuthnCredentialRepository.findByUser(userOpt.get());
+
+        // Convertir a PublicKeyCredentialDescriptor
+        return credentials.stream()
+            .map(cred -> PublicKeyCredentialDescriptor.builder()
+                .id(ByteArray.fromBase64Url(cred.getCredentialId()))
+                .build())
+            .collect(Collectors.toSet());
     }
 
     @Override
     public Optional<ByteArray> getUserHandleForUsername(String username) {
-        // No usado en discoverable credentials
-        return Optional.empty();
+        // Buscar usuario por email y devolver su ID como userHandle
+        return userRepository.findByEmail(username)
+            .map(user -> new ByteArray(user.getId().toString().getBytes(StandardCharsets.UTF_8)));
     }
 
     @Override
