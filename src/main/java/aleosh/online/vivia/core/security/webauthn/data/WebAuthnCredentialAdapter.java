@@ -47,9 +47,17 @@ public class WebAuthnCredentialAdapter implements CredentialRepository {
 
         // Convertir a PublicKeyCredentialDescriptor
         return credentials.stream()
-            .map(cred -> PublicKeyCredentialDescriptor.builder()
-                .id(ByteArray.fromBase64Url(cred.getCredentialId()))
-                .build())
+            .map(cred -> {
+                try {
+                    return PublicKeyCredentialDescriptor.builder()
+                        .id(ByteArray.fromBase64Url(cred.getCredentialId()))
+                        .build();
+                } catch (Exception e) {
+                    // Si hay error al decodificar, omitir esta credencial
+                    return null;
+                }
+            })
+            .filter(desc -> desc != null)
             .collect(Collectors.toSet());
     }
 
