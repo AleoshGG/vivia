@@ -1,5 +1,6 @@
 package aleosh.online.vivia.features.auth.controllers;
 
+import aleosh.online.vivia.features.auth.data.dtos.request.BiometricLoginChallengeDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.GoogleLoginRequestDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.RefreshTokenRequestDto;
@@ -31,10 +32,12 @@ public class AuthController {
         this.refreshTokenServiceImpl = refreshTokenServiceImpl;
     }
 
-    @Operation(summary = "Paso 1: Solicitar desafío de login", description = "Devuelve las opciones WebAuthn para solicitar la huella digital al usuario. No requiere identificador.")
-    @PostMapping(value = "/login/challenge", produces = "application/json")
-    public ResponseEntity<BaseResponse<String>> startLogin() {
-        String optionsJson = authService.startLogin();
+    @Operation(summary = "Paso 1: Solicitar desafío de login", description = "Devuelve las opciones WebAuthn para solicitar la huella digital al usuario. Requiere el email del usuario.")
+    @PostMapping(value = "/login/challenge", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<String>> startLogin(
+            @Valid @RequestBody BiometricLoginChallengeDto dto
+    ) {
+        String optionsJson = authService.startLogin(dto);
 
         return new BaseResponse<>(
                 true, optionsJson, "Desafío de login generado correctamente", HttpStatus.OK

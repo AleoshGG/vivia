@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.auth.services.impl;
 
 import aleosh.online.vivia.core.config.jwt.JwtProvider;
+import aleosh.online.vivia.features.auth.data.dtos.request.BiometricLoginChallengeDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.GoogleLoginRequestDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.VerifyLoginDto;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
@@ -11,6 +12,7 @@ import aleosh.online.vivia.features.auth.data.repositories.WebAuthnCredentialRep
 import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.auth.services.IAuthService;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
+import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.yubico.webauthn.AssertionRequest;
 import com.yubico.webauthn.AssertionResult;
@@ -51,6 +53,7 @@ public class AuthServiceImpl implements IAuthService {
     private final GoogleTokenVerifierServiceImpl googleTokenVerifierService;
     private final CredentialRepository credentialRepository;
     private final WebAuthnCredentialRepository webAuthnCredentialRepository;
+    private final UserRepository userRepository;
 
     // Caché para los desafíos de login. La clave es el propio desafío en Base64Url
     private final Map<String, AssertionRequest> loginCache = new ConcurrentHashMap<>();
@@ -63,7 +66,8 @@ public class AuthServiceImpl implements IAuthService {
             RefreshTokenServiceImpl refreshTokenServiceImpl,
             GoogleTokenVerifierServiceImpl googleTokenVerifierService,
             CredentialRepository credentialRepository,
-            WebAuthnCredentialRepository webAuthnCredentialRepository
+            WebAuthnCredentialRepository webAuthnCredentialRepository,
+            UserRepository userRepository
     ) {
         this.jwtProvider = jwtProvider;
         this.relyingParty = relyingParty;
@@ -73,12 +77,35 @@ public class AuthServiceImpl implements IAuthService {
         this.googleTokenVerifierService = googleTokenVerifierService;
         this.credentialRepository = credentialRepository;
         this.webAuthnCredentialRepository = webAuthnCredentialRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
-    public String startLogin() {
-        // Al no enviar un usuario, forzamos el uso de "Discoverable Credentials" (solo huella)
-        AssertionRequest request = relyingParty.startAssertion(StartAssertionOptions.builder().build());
+    public String startLogin(BiometricLoginChallengeDto dto) {
+        // Verificar que el usuario existe
+        UserEntity user = userRepository.findByEmail(dto.getEmail())
+            .orElseThrow(() -> new AuthException(
+                "No existe un usuario con el email: " + dto.getEmail(),
+                HttpStatus.NOT_FOUND
+            ));
+
+        // Verificar que el usuario tiene credenciales biométricas
+        boolean hasBiometricCredentials = user.getCredentials().stream()
+            .anyMatch(cred -> cred.getCredentialType() == CredentialType.BIOMETRIC);
+
+        if (!hasBiometricCredentials) {
+            throw new AuthException(
+                "El usuario no tiene credenciales biométricas registradas",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // Iniciar assertion con el username - esto hará que allowCredentials se incluya
+        AssertionRequest request = relyingParty.startAssertion(
+            StartAssertionOptions.builder()
+                .username(dto.getEmail())
+                .build()
+        );
 
         String challengeId = request.getPublicKeyCredentialRequestOptions().getChallenge().getBase64Url();
         loginCache.put(challengeId, request);
