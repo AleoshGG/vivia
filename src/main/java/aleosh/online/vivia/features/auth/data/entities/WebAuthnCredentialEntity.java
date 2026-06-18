@@ -28,6 +28,9 @@ public class WebAuthnCredentialEntity {
     @Column(name = "credential_id", unique = true, nullable = false, length = 512)
     private String credentialId;
 
+    @Column(name = "user_handle", nullable = false, length = 512)
+    private String userHandle;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JdbcTypeCode(Types.VARCHAR)
