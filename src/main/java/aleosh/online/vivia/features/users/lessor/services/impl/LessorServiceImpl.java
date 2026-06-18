@@ -21,11 +21,15 @@ import com.yubico.webauthn.FinishRegistrationOptions;
 import com.yubico.webauthn.RegistrationResult;
 import com.yubico.webauthn.StartRegistrationOptions;
 import com.yubico.webauthn.data.AuthenticatorAttestationResponse;
+import com.yubico.webauthn.data.AuthenticatorAttachment;
+import com.yubico.webauthn.data.AuthenticatorSelectionCriteria;
 import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs;
 import com.yubico.webauthn.data.PublicKeyCredential;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
+import com.yubico.webauthn.data.ResidentKeyRequirement;
 import com.yubico.webauthn.data.UserIdentity;
+import com.yubico.webauthn.data.UserVerificationRequirement;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -222,13 +226,18 @@ public class LessorServiceImpl implements ILessorService {
         UUID userId = UUID.randomUUID();
         ByteArray userHandle = new ByteArray(userId.toString().getBytes(StandardCharsets.UTF_8));
 
-        // Crear opciones de registro WebAuthn
+        // Crear opciones de registro WebAuthn con resident key
         PublicKeyCredentialCreationOptions options = relyingParty.startRegistration(
             StartRegistrationOptions.builder()
                 .user(UserIdentity.builder()
                     .name(dto.getEmail())
                     .displayName(dto.getName() + " " + dto.getPaternalSurname())
                     .id(userHandle)
+                    .build())
+                .authenticatorSelection(AuthenticatorSelectionCriteria.builder()
+                    .authenticatorAttachment(AuthenticatorAttachment.PLATFORM)
+                    .residentKey(ResidentKeyRequirement.REQUIRED)
+                    .userVerification(UserVerificationRequirement.PREFERRED)
                     .build())
                 .build()
         );
