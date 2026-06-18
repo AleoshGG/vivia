@@ -28,6 +28,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
             cd ~/vivia-app
             # Crear archivo .env a partir de los secretos para docker-compose
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env
@@ -37,8 +38,11 @@ jobs:
             echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
             
             # Detener contenedores previos si existen y reconstruir
-            docker compose down
-            docker compose up --build -d
+            docker compose down --remove-orphans
+            docker compose up --build -d --wait
             
             # Limpiar imágenes huérfanas
             docker image prune -f
+            
+            # Verificación final
+            docker ps
