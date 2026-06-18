@@ -6,6 +6,7 @@ import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
 import com.yubico.webauthn.CredentialRepository;
 import com.yubico.webauthn.RegisteredCredential;
+import com.yubico.webauthn.data.AuthenticatorTransport;
 import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor;
 import org.springframework.stereotype.Component;
@@ -51,6 +52,10 @@ public class WebAuthnCredentialAdapter implements CredentialRepository {
                 try {
                     return PublicKeyCredentialDescriptor.builder()
                         .id(ByteArray.fromBase64Url(cred.getCredentialId()))
+                        .transports(Set.of(
+                            AuthenticatorTransport.INTERNAL,
+                            AuthenticatorTransport.HYBRID
+                        ))
                         .build();
                 } catch (Exception e) {
                     // Si hay error al decodificar, omitir esta credencial
