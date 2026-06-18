@@ -240,9 +240,9 @@ public class LesseeServiceImpl implements ILesseeService {
                     .build()
             );
 
-            if (!result.isAttestationTrusted()) {
-                throw new UntrustedAttestationException("Attestation no confiable");
-            }
+            // Nota: No verificamos isAttestationTrusted() porque los dispositivos móviles
+            // comúnmente usan "none attestation" por razones de privacidad.
+            // La seguridad se basa en la firma criptográfica verificada arriba.
 
             RegisterLesseeBiometricChallengeDto userData = registrationData.getUserData();
 
