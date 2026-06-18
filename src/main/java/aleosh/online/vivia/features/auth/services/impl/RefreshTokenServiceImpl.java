@@ -10,14 +10,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Service
-public class RefreshTokenService {
+public class RefreshTokenServiceImpl {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
     @Value("${jwt.refresh.expiration}")
     private Long refreshTokenDurationMs;
 
-    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository) {
+    public RefreshTokenServiceImpl(RefreshTokenRepository refreshTokenRepository) {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 

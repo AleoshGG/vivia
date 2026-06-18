@@ -1,15 +1,18 @@
 package aleosh.online.vivia.features.users.lessor.services.impl;
 
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
+import aleosh.online.vivia.features.auth.services.impl.GoogleTokenVerifierServiceImpl;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorGoogleDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
 import aleosh.online.vivia.core.config.jwt.JwtProvider;
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
 import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
-import aleosh.online.vivia.features.auth.services.impl.RefreshTokenService;
+import aleosh.online.vivia.features.auth.services.impl.RefreshTokenServiceImpl;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
 import aleosh.online.vivia.features.users.users.domain.exceptions.UserAlreadyExistsException;
 import aleosh.online.vivia.features.users.users.domain.repositories.IUserRepository;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +24,6 @@ import aleosh.online.vivia.features.users.lessor.services.mappers.LessorMapper;
 import com.yubico.webauthn.RelyingParty;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 
 import java.util.List;
 import java.util.Collections;
@@ -41,7 +43,8 @@ public class LessorServiceImpl implements ILessorService {
     private final PasswordEncoder passwordEncoder;
     private final LesseeRepository lesseeRepository;
     private final JwtProvider jwtProvider;
-    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenServiceImpl refreshTokenServiceImpl;
+    private final GoogleTokenVerifierServiceImpl googleTokenVerifierService;
 
     public LessorServiceImpl(
             LessorRepository lessorRepository,
@@ -52,7 +55,8 @@ public class LessorServiceImpl implements ILessorService {
             PasswordEncoder passwordEncoder,
             LesseeRepository lesseeRepository,
             JwtProvider jwtProvider,
-            RefreshTokenService refreshTokenService
+            RefreshTokenServiceImpl refreshTokenServiceImpl,
+            GoogleTokenVerifierServiceImpl googleTokenVerifierService
     ) {
         this.lessorRepository = lessorRepository;
         this.userDomainRepository = userDomainRepository;
@@ -62,7 +66,8 @@ public class LessorServiceImpl implements ILessorService {
         this.passwordEncoder = passwordEncoder;
         this.lesseeRepository = lesseeRepository;
         this.jwtProvider = jwtProvider;
-        this.refreshTokenService = refreshTokenService;
+        this.refreshTokenServiceImpl = refreshTokenServiceImpl;
+        this.googleTokenVerifierService = googleTokenVerifierService;
     }
 
     @Override
@@ -108,7 +113,69 @@ public class LessorServiceImpl implements ILessorService {
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(request.getEmail(), null, authorities);
 
         String jwt = jwtProvider.generateToken(auth);
-        String refreshToken = refreshTokenService.createRefreshToken(request.getEmail(), role).getToken();
+        String refreshToken = refreshTokenServiceImpl.createRefreshToken(request.getEmail(), role).getToken();
+
+        return new AuthResponseDto(jwt, refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponseDto registerWithGoogleAccount(RegisterLessorGoogleDto request) {
+        GoogleIdToken.Payload payload = googleTokenVerifierService.verifyIdToken(request.getIdToken());
+
+        String googleId = payload.getSubject();
+        String email = payload.getEmail();
+
+        // Extraer campos específicos para mayor precisión
+        String givenName = (String) payload.get("given_name");
+        String familyName = (String) payload.get("family_name");
+        String pictureUrl = (String) payload.get("picture");
+        String phoneNumber = (String) payload.get("phone_number");
+
+        if (userDomainRepository.existsByEmail(email)) {
+            throw new UserAlreadyExistsException("Email " + email + " is already taken.");
+        }
+
+        // Lógica de división de apellidos (paterno y materno)
+        String paternal = "";
+        String maternal = "";
+        if (familyName != null && !familyName.isBlank()) {
+            String[] parts = familyName.trim().split("\\s+", 2);
+            paternal = parts[0];
+            if (parts.length > 1) {
+                maternal = parts[1];
+            }
+        }
+
+        UserEntity userEntity = UserEntity.builder()
+                .name(givenName != null ? givenName : (String) payload.get("name"))
+                .paternalSurname(paternal)
+                .maternalSurname(maternal)
+                .email(email)
+                .photoUrl(pictureUrl != null ? pictureUrl : "No photo")
+                .build();
+
+        CredentialEntity credentialEntity = CredentialEntity.builder()
+                .user(userEntity)
+                .credentialType(CredentialType.GOOGLE)
+                .providerCredentialId(googleId)
+                .build();
+        userEntity.getCredentials().add(credentialEntity);
+
+        LessorEntity lessorEntity = LessorEntity.builder()
+                .user(userEntity)
+                .phoneNumber(phoneNumber != null ? phoneNumber : "0000000000")
+                .build();
+        userEntity.setLessor(lessorEntity);
+
+        userJpaRepository.save(userEntity);
+
+        String role = "ROLE_LESSOR";
+        var authorities = Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority(role));
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
+
+        String jwt = jwtProvider.generateToken(auth);
+        String refreshToken = refreshTokenServiceImpl.createRefreshToken(email, role).getToken();
 
         return new AuthResponseDto(jwt, refreshToken);
     }

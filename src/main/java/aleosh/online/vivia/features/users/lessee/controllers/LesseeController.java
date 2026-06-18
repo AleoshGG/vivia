@@ -2,30 +2,16 @@ package aleosh.online.vivia.features.users.lessee.controllers;
 
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
-import aleosh.online.vivia.features.users.lessee.data.dtos.request.CreateLesseeDto;
+import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeGoogleDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseePasswordDto;
-import aleosh.online.vivia.features.users.lessee.data.dtos.request.VerifyLesseeRegistrationDto;
-import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
-import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-import aleosh.online.vivia.features.users.lessee.data.dtos.response.LessorWithFollowStatusDto;
 
 @RestController
 @RequestMapping("/lessees")
@@ -51,6 +37,22 @@ public class LesseeController {
                 true, authResponseDto, "Arrendatario registrado y logueado exitosamente", HttpStatus.CREATED
         ).buildResponseEntity();
     }
+
+    @Operation(
+            summary = "Registro con cuenta Google",
+            description = "Registra un nuevo arrendatario utilizando su cuenta vinculada a Google. Deveulve los tokens de sesión inmediatamente."
+    )
+    @PostMapping(value = "/google", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> registerWithGoogle(
+            @Valid @RequestBody RegisterLesseeGoogleDto requestDto
+    ) {
+        AuthResponseDto authResponseDto = lesseeService.registerWithGoogleAccount(requestDto);
+
+        return new BaseResponse<>(
+                true, authResponseDto, "Arrendatario registrado y logueado exitosamente", HttpStatus.CREATED
+        ).buildResponseEntity();
+    }
+
     /*
     @Operation(summary = "Paso 1: Solicitar desafío de registro",
             description = "Inicia el registro del arrendatario y devuelve un JSON con el desafío (Challenge) para crear la Passkey.")

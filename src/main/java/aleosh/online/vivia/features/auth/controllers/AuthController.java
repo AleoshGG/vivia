@@ -6,7 +6,7 @@ import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.auth.data.dtos.request.VerifyLoginDto;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.auth.services.IAuthService;
-import aleosh.online.vivia.features.auth.services.impl.RefreshTokenService;
+import aleosh.online.vivia.features.auth.services.impl.RefreshTokenServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,12 +22,12 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final IAuthService authService;
-    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenServiceImpl refreshTokenServiceImpl;
 
     @Autowired
-    public AuthController(IAuthService authService, RefreshTokenService refreshTokenService) {
+    public AuthController(IAuthService authService, RefreshTokenServiceImpl refreshTokenServiceImpl) {
         this.authService = authService;
-        this.refreshTokenService = refreshTokenService;
+        this.refreshTokenServiceImpl = refreshTokenServiceImpl;
     }
 
     @Operation(summary = "Paso 1: Solicitar desafío de login", description = "Devuelve las opciones WebAuthn para solicitar la huella digital al usuario. No requiere identificador.")
@@ -80,7 +80,7 @@ public class AuthController {
     @PostMapping(value = "/logout", produces = "application/json")
     public ResponseEntity<BaseResponse<Void>> logout() {
         String identifier = SecurityContextHolder.getContext().getAuthentication().getName();
-        refreshTokenService.deleteByUserIdentifier(identifier);
+        refreshTokenServiceImpl.deleteByUserIdentifier(identifier);
 
         return new BaseResponse<Void>(
                 true, null, "Sesión cerrada correctamente", HttpStatus.OK

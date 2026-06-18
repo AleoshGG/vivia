@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.auth.services.impl;
 
 import aleosh.online.vivia.core.config.jwt.JwtProvider;
+import aleosh.online.vivia.features.auth.data.dtos.request.GoogleLoginRequestDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.VerifyLoginDto;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.auth.services.IAuthService;
@@ -34,7 +35,8 @@ public class AuthServiceImpl implements IAuthService {
     private final UserDetailsServiceImpl userDetailsService;
     //private final PasskeyCredentialRepository passkeyRepository;
     private final AuthenticationManager authenticationManager;
-    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenServiceImpl refreshTokenServiceImpl;
+    private final GoogleTokenVerifierServiceImpl googleTokenVerifierService;
 
     // Caché para los desafíos de login. La clave es el propio desafío en Base64Url
     private final Map<String, AssertionRequest> loginCache = new ConcurrentHashMap<>();
@@ -45,14 +47,16 @@ public class AuthServiceImpl implements IAuthService {
             UserDetailsServiceImpl userDetailsService,
             /*PasskeyCredentialRepository passkeyRepository,*/ 
             AuthenticationManager authenticationManager,
-            RefreshTokenService refreshTokenService
+            RefreshTokenServiceImpl refreshTokenServiceImpl,
+            GoogleTokenVerifierServiceImpl googleTokenVerifierService
     ) {
         this.jwtProvider = jwtProvider;
         this.relyingParty = relyingParty;
         this.userDetailsService = userDetailsService;
         //this.passkeyRepository = passkeyRepository;
         this.authenticationManager = authenticationManager;
-        this.refreshTokenService = refreshTokenService;
+        this.refreshTokenServiceImpl = refreshTokenServiceImpl;
+        this.googleTokenVerifierService = googleTokenVerifierService;
     }
 
     @Override
@@ -114,7 +118,7 @@ public class AuthServiceImpl implements IAuthService {
                 String jwt = jwtProvider.generateToken(auth);
                 
                 String role = userDetails.getAuthorities().iterator().next().getAuthority();
-                RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(identifier, role);
+                RefreshTokenEntity refreshToken = refreshTokenServiceImpl.createRefreshToken(identifier, role);
                 
                 return new AuthResponseDto(jwt, refreshToken.getToken());
             } else {
@@ -137,17 +141,22 @@ public class AuthServiceImpl implements IAuthService {
         String jwt = jwtProvider.generateToken(authentication);
         
         String role = authentication.getAuthorities().iterator().next().getAuthority();
-        RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(loginDto.getIdentifier(), role);
+        RefreshTokenEntity refreshToken = refreshTokenServiceImpl.createRefreshToken(loginDto.getIdentifier(), role);
         
         return new AuthResponseDto(jwt, refreshToken.getToken());
+    }
+
+    @Override
+    public AuthResponseDto googleLogin(GoogleLoginRequestDto googleLoginDto) {
+        return null;
     }
 
     @Override
     public AuthResponseDto refreshToken(RefreshTokenRequestDto request) {
         String requestRefreshToken = request.getRefreshToken();
 
-        RefreshTokenEntity refreshTokenEntity = refreshTokenService.findByToken(requestRefreshToken);
-        refreshTokenService.verifyExpiration(refreshTokenEntity);
+        RefreshTokenEntity refreshTokenEntity = refreshTokenServiceImpl.findByToken(requestRefreshToken);
+        refreshTokenServiceImpl.verifyExpiration(refreshTokenEntity);
 
         String userIdentifier = refreshTokenEntity.getUserIdentifier();
         String role = refreshTokenEntity.getRole();
@@ -161,7 +170,7 @@ public class AuthServiceImpl implements IAuthService {
         String jwt = jwtProvider.generateToken(auth);
 
         // Rotation
-        RefreshTokenEntity newRefreshToken = refreshTokenService.createRefreshToken(userIdentifier, role);
+        RefreshTokenEntity newRefreshToken = refreshTokenServiceImpl.createRefreshToken(userIdentifier, role);
 
         return new AuthResponseDto(jwt, newRefreshToken.getToken());
     }

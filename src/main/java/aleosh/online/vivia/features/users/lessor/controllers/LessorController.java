@@ -3,6 +3,7 @@ package aleosh.online.vivia.features.users.lessor.controllers;
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 //import aleosh.online.vivia.features.users.lessor.data.dtos.request.CreateLessorDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorGoogleDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
 //import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerifyLessorRegistrationDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
@@ -44,6 +45,21 @@ public class LessorController {
             @Valid @RequestBody RegisterLessorPasswordDto requestDto
     ) {
         AuthResponseDto authResponseDto = lessorService.registerWithPassword(requestDto);
+
+        return new BaseResponse<>(
+                true, authResponseDto, "Arrendador registrado y logueado exitosamente", HttpStatus.CREATED
+        ).buildResponseEntity();
+    }
+
+    @Operation(
+            summary = "Registro con cuenta Google",
+            description = "Registra un nuevo arrendador utilizando su cuenta vinculada a Google. Deveulve los tokens de sesión inmediatamente."
+    )
+    @PostMapping(value = "/google", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> registerWithGoogle(
+            @Valid @RequestBody RegisterLessorGoogleDto requestDto
+    ) {
+        AuthResponseDto authResponseDto = lessorService.registerWithGoogleAccount(requestDto);
 
         return new BaseResponse<>(
                 true, authResponseDto, "Arrendador registrado y logueado exitosamente", HttpStatus.CREATED
