@@ -3,6 +3,8 @@ package aleosh.online.vivia.features.users.lessor.controllers;
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 //import aleosh.online.vivia.features.users.lessor.data.dtos.request.CreateLessorDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorBiometricChallengeDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorBiometricVerifyDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorGoogleDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
 //import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerifyLessorRegistrationDto;
@@ -53,7 +55,7 @@ public class LessorController {
 
     @Operation(
             summary = "Registro con cuenta Google",
-            description = "Registra un nuevo arrendador utilizando su cuenta vinculada a Google. Deveulve los tokens de sesión inmediatamente."
+            description = "Registra un nuevo arrendador utilizando su cuenta vinculada a Google. Devuelve los tokens de sesión inmediatamente."
     )
     @PostMapping(value = "/google", consumes = "application/json", produces = "application/json")
     public ResponseEntity<BaseResponse<AuthResponseDto>> registerWithGoogle(
@@ -66,91 +68,33 @@ public class LessorController {
         ).buildResponseEntity();
     }
 
-    /*@Operation(summary = "Paso 1: Solicitar desafío de registro",
-            description = "Inicia el registro del arrendador y devuelve un JSON con el desafío (Challenge) para crear la Passkey.")
-    @PostMapping(value = "/register/challenge", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<BaseResponse<String>> startRegistration(
-            @RequestBody CreateLessorDto createLessorDto
+    @Operation(
+            summary = "Paso 1: Solicitar desafío de registro biométrico",
+            description = "Genera un challenge WebAuthn para iniciar el registro con huella digital."
+    )
+    @PostMapping(value = "/biometric/challenge", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<String>> startBiometricRegistration(
+            @Valid @RequestBody RegisterLessorBiometricChallengeDto requestDto
     ) {
-        // Retorna un JSON String directamente con los datos criptográficos requeridos por el celular
-        String webAuthnOptionsJson = lessorService.startRegistration(createLessorDto);
+        String challengeJson = lessorService.startBiometricRegistration(requestDto);
 
         return new BaseResponse<>(
-                true, webAuthnOptionsJson, "Desafío generado correctamente", HttpStatus.OK
+                true, challengeJson, "Challenge de registro biométrico generado", HttpStatus.OK
         ).buildResponseEntity();
     }
 
-    @Operation(summary = "Paso 2: Verificar credencial y guardar arrendador",
-            description = "Recibe la firma biométrica del dispositivo, la verifica y, si es válida, persiste el usuario en base de datos.")
-    @PostMapping(value = "/register/verify", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<BaseResponse<LessorResponseDto>> finishRegistration(
-            @RequestBody VerifyLessorRegistrationDto verifyLessorRegistrationDto
+    @Operation(
+            summary = "Paso 2: Verificar credencial biométrica y registrar",
+            description = "Verifica la credencial biométrica capturada, crea el usuario y devuelve los tokens de sesión."
+    )
+    @PostMapping(value = "/biometric/verify", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> finishBiometricRegistration(
+            @Valid @RequestBody RegisterLessorBiometricVerifyDto requestDto
     ) {
-        LessorResponseDto lessorResponseDto = lessorService.finishRegistration(verifyLessorRegistrationDto);
+        AuthResponseDto authResponseDto = lessorService.finishBiometricRegistration(requestDto);
 
         return new BaseResponse<>(
-                true, lessorResponseDto, "Arrendador registrado exitosamente", HttpStatus.CREATED
-        ).buildResponseEntity();
-    }*/
-
-    @Operation(summary = "Obtener todos los arrendadores", description = "Devuelve una lista con todos los arrendadores registrados.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente")
-    })
-    @GetMapping(produces = "application/json")
-    public ResponseEntity<BaseResponse<List<LessorResponseDto>>> getAllLessors() {
-        List<LessorResponseDto> lessors = lessorService.getAllLessors();
-
-        return new BaseResponse<>(
-                true, lessors, "Arrendadores obtenidos correctamente", HttpStatus.OK
+                true, authResponseDto, "Arrendador registrado y logueado exitosamente", HttpStatus.CREATED
         ).buildResponseEntity();
     }
-
-    @Operation(summary = "Obtener mi perfil", description = "Devuelve los datos del arrendador autenticado usando el token de sesión.")
-    @PreAuthorize("hasRole('LESSOR')") // <-- PROTECCIÓN DE ROL
-    @GetMapping(value = "/me", produces = "application/json")
-    public ResponseEntity<BaseResponse<LessorResponseDto>> getMyProfile() {
-        // Extraemos el identificador (que sabemos que es el COMPANY NAME gracias a nuestro UserDetailsService)
-        String currentCompanyName = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        // CORRECCIÓN SEMÁNTICA: Usamos getLessorByCompanyName
-        LessorResponseDto user = lessorService.getLessorByCompanyName(currentCompanyName);
-
-        return new BaseResponse<>(
-                true, user, "Perfil obtenido correctamente", HttpStatus.OK
-        ).buildResponseEntity();
-    }
-
-    @Operation(summary = "Buscar arrendador por nombre de empresa", description = "Busca y devuelve los datos de un arrendador específico mediante el nombre de su empresa.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Arrendador encontrado"),
-            @ApiResponse(responseCode = "404", description = "Arrendador no encontrado", content = @Content)
-    })
-    @GetMapping(value = "/company/{companyName}", produces = "application/json")
-    public ResponseEntity<BaseResponse<LessorResponseDto>> getLessorByCompanyName(
-            @Parameter(description = "Nombre de la empresa del arrendador", required = true)
-            @PathVariable String companyName
-    ) {
-        LessorResponseDto lessor = lessorService.getLessorByCompanyName(companyName);
-
-        return new BaseResponse<>(
-                true, lessor, "Arrendador obtenido correctamente", HttpStatus.OK
-        ).buildResponseEntity();
-    }
-
-    @Operation(summary = "Obtener seguidores", description = "Devuelve una lista con todos los arrendatarios que siguen al arrendador autenticado.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente")
-    })
-    @PreAuthorize("hasRole('LESSOR')")
-    @GetMapping(value = "/followers", produces = "application/json")
-    public ResponseEntity<BaseResponse<List<LesseeResponseDto>>> getFollowers() {
-        String currentCompanyName = SecurityContextHolder.getContext().getAuthentication().getName();
-        List<LesseeResponseDto> followers = lessorService.getFollowers(currentCompanyName);
-
-        return new BaseResponse<>(
-                true, followers, "Seguidores obtenidos correctamente", HttpStatus.OK
-        ).buildResponseEntity();
-    }
-
 }

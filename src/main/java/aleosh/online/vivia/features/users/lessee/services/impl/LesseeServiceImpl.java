@@ -3,9 +3,13 @@ package aleosh.online.vivia.features.users.lessee.services.impl;
 import aleosh.online.vivia.core.config.jwt.JwtProvider;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
+import aleosh.online.vivia.features.auth.data.entities.WebAuthnCredentialEntity;
+import aleosh.online.vivia.features.auth.data.repositories.WebAuthnCredentialRepository;
 import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.auth.services.impl.GoogleTokenVerifierServiceImpl;
 import aleosh.online.vivia.features.auth.services.impl.RefreshTokenServiceImpl;
+import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeBiometricChallengeDto;
+import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeBiometricVerifyDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeGoogleDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseePasswordDto;
 import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
@@ -15,12 +19,29 @@ import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
 import aleosh.online.vivia.features.users.users.domain.exceptions.UserAlreadyExistsException;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.yubico.webauthn.RelyingParty;
+import com.yubico.webauthn.RegistrationResult;
+import com.yubico.webauthn.FinishRegistrationOptions;
+import com.yubico.webauthn.StartRegistrationOptions;
+import com.yubico.webauthn.data.AuthenticatorAttestationResponse;
+import com.yubico.webauthn.data.ByteArray;
+import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs;
+import com.yubico.webauthn.data.PublicKeyCredential;
+import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
+import com.yubico.webauthn.data.UserIdentity;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class LesseeServiceImpl implements ILesseeService {
@@ -31,6 +52,11 @@ public class LesseeServiceImpl implements ILesseeService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenServiceImpl refreshTokenServiceImpl;
     private final GoogleTokenVerifierServiceImpl googleTokenVerifierService;
+    private final RelyingParty relyingParty;
+    private final WebAuthnCredentialRepository webAuthnCredentialRepository;
+
+    // Caché temporal para almacenar datos de registro biométrico
+    private final Map<String, BiometricRegistrationData> registrationCache = new ConcurrentHashMap<>();
 
     public LesseeServiceImpl(
             LesseeRepository lesseeRepository,
@@ -38,7 +64,9 @@ public class LesseeServiceImpl implements ILesseeService {
             PasswordEncoder passwordEncoder,
             JwtProvider jwtProvider,
             RefreshTokenServiceImpl refreshTokenServiceImpl,
-            GoogleTokenVerifierServiceImpl googleTokenVerifierService
+            GoogleTokenVerifierServiceImpl googleTokenVerifierService,
+            RelyingParty relyingParty,
+            WebAuthnCredentialRepository webAuthnCredentialRepository
     ) {
         this.lesseeRepository = lesseeRepository;
         this.userRepository = userRepository;
@@ -46,6 +74,8 @@ public class LesseeServiceImpl implements ILesseeService {
         this.jwtProvider = jwtProvider;
         this.refreshTokenServiceImpl = refreshTokenServiceImpl;
         this.googleTokenVerifierService = googleTokenVerifierService;
+        this.relyingParty = relyingParty;
+        this.webAuthnCredentialRepository = webAuthnCredentialRepository;
     }
 
 
@@ -146,41 +176,138 @@ public class LesseeServiceImpl implements ILesseeService {
         return new AuthResponseDto(jwt, refreshToken);
     }
 
-    /*@Override
-    public String startRegistration(CreateLesseeDto createLesseeDto) {
-        return null;
+    @Override
+    public String startBiometricRegistration(RegisterLesseeBiometricChallengeDto dto) {
+        // Verificar que el email no exista
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new UserAlreadyExistsException("Email " + dto.getEmail() + " ya está registrado");
+        }
+
+        // Generar userHandle único (será el ID del usuario)
+        UUID userId = UUID.randomUUID();
+        ByteArray userHandle = new ByteArray(userId.toString().getBytes(StandardCharsets.UTF_8));
+
+        // Crear opciones de registro WebAuthn
+        PublicKeyCredentialCreationOptions options = relyingParty.startRegistration(
+            StartRegistrationOptions.builder()
+                .user(UserIdentity.builder()
+                    .name(dto.getEmail())
+                    .displayName(dto.getName() + " " + dto.getPaternalSurname())
+                    .id(userHandle)
+                    .build())
+                .build()
+        );
+
+        // Guardar en caché temporal usando el challenge como clave
+        String challengeId = options.getChallenge().getBase64Url();
+        registrationCache.put(challengeId, new BiometricRegistrationData(options, dto, userId));
+
+        try {
+            return options.toCredentialsCreateJson();
+        } catch (Exception e) {
+            registrationCache.remove(challengeId);
+            throw new RuntimeException("Error generando challenge de registro biométrico", e);
+        }
     }
 
     @Override
-    public LesseeResponseDto finishRegistration(VerifyLesseeRegistrationDto verifyLesseeRegistrationDto) {
-        return null;
+    @Transactional
+    public AuthResponseDto finishBiometricRegistration(RegisterLesseeBiometricVerifyDto dto) {
+        try {
+            // Parse de la respuesta del dispositivo
+            PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs> pkc =
+                PublicKeyCredential.parseRegistrationResponseJson(dto.getCredentialResponseJson());
+
+            // Obtener el challenge de la respuesta
+            String challengeId = pkc.getResponse().getClientData().getChallenge().getBase64Url();
+
+            // Buscar datos en caché
+            BiometricRegistrationData registrationData = registrationCache.get(challengeId);
+            if (registrationData == null) {
+                throw new RuntimeException("Challenge de registro expirado o inválido");
+            }
+
+            // Verificar la firma criptográfica
+            RegistrationResult result = relyingParty.finishRegistration(
+                FinishRegistrationOptions.builder()
+                    .request(registrationData.getOptions())
+                    .response(pkc)
+                    .build()
+            );
+
+            if (!result.isAttestationTrusted()) {
+                throw new RuntimeException("Attestation no confiable");
+            }
+
+            RegisterLesseeBiometricChallengeDto userData = registrationData.getUserData();
+
+            // Crear usuario
+            UserEntity userEntity = UserEntity.builder()
+                .id(registrationData.getUserId())
+                .name(userData.getName())
+                .paternalSurname(userData.getPaternalSurname())
+                .maternalSurname(userData.getMaternalSurname())
+                .email(userData.getEmail())
+                .build();
+
+            // Crear credencial tipo BIOMETRIC
+            CredentialEntity credentialEntity = CredentialEntity.builder()
+                .user(userEntity)
+                .credentialType(CredentialType.BIOMETRIC)
+                .providerCredentialId(result.getKeyId().getId().getBase64Url())
+                .secretData(null)
+                .build();
+            userEntity.getCredentials().add(credentialEntity);
+
+            // Crear credencial WebAuthn
+            WebAuthnCredentialEntity webAuthnCred = WebAuthnCredentialEntity.builder()
+                .credentialId(result.getKeyId().getId().getBase64Url())
+                .user(userEntity)
+                .publicKey(result.getPublicKeyCose().getBase64())
+                .signCount(result.getSignatureCount())
+                .aaguid(Optional.ofNullable(result.getAaguid()).map(ba -> ba.getBase64Url()).orElse(null))
+                .build();
+
+            // Crear Lessee
+            LesseeEntity lesseeEntity = LesseeEntity.builder()
+                .user(userEntity)
+                .build();
+            userEntity.setLessee(lesseeEntity);
+
+            // Guardar en BD
+            userRepository.save(userEntity);
+            webAuthnCredentialRepository.save(webAuthnCred);
+
+            // Generar tokens
+            String role = "ROLE_LESSEE";
+            var authorities = Collections.singletonList(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority(role)
+            );
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                userData.getEmail(), null, authorities
+            );
+
+            String jwt = jwtProvider.generateToken(auth);
+            String refreshToken = refreshTokenServiceImpl.createRefreshToken(
+                userData.getEmail(), role
+            ).getToken();
+
+            // Limpiar caché
+            registrationCache.remove(challengeId);
+
+            return new AuthResponseDto(jwt, refreshToken);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error en verificación de registro biométrico: " + e.getMessage(), e);
+        }
     }
 
-    @Override
-    public LesseeResponseDto getLesseeByUsername(String username) {
-        return null;
+    // Clase interna para almacenar datos temporales de registro
+    @Data
+    @AllArgsConstructor
+    private static class BiometricRegistrationData {
+        private PublicKeyCredentialCreationOptions options;
+        private RegisterLesseeBiometricChallengeDto userData;
+        private UUID userId;
     }
-
-    @Override
-    public LesseeResponseDto getLesseeByEmail(String email) {
-        return null;
-    }
-
-    @Override
-    public List<LesseeResponseDto> getAllLessees() {
-        return null;
-    }
-
-    @Override
-    public void followLessor(String lesseeEmail, String lessorCompanyName) {
-    }
-
-    @Override
-    public void updateFcmToken(String email, String fcmToken) {
-    }
-
-    @Override
-    public List<LessorWithFollowStatusDto> getAllLessorsWithFollowStatus(String email) {
-        return null;
-    }*/
 }

@@ -5,7 +5,9 @@ import aleosh.online.vivia.features.auth.data.dtos.request.GoogleLoginRequestDto
 import aleosh.online.vivia.features.auth.data.dtos.request.VerifyLoginDto;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
+import aleosh.online.vivia.features.auth.data.entities.WebAuthnCredentialEntity;
 import aleosh.online.vivia.features.auth.data.repositories.CredentialRepository;
+import aleosh.online.vivia.features.auth.data.repositories.WebAuthnCredentialRepository;
 import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.auth.services.IAuthService;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
@@ -40,11 +42,11 @@ public class AuthServiceImpl implements IAuthService {
     private final JwtProvider jwtProvider;
     private final RelyingParty relyingParty;
     private final UserDetailsServiceImpl userDetailsService;
-    //private final PasskeyCredentialRepository passkeyRepository;
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenServiceImpl refreshTokenServiceImpl;
     private final GoogleTokenVerifierServiceImpl googleTokenVerifierService;
     private final CredentialRepository credentialRepository;
+    private final WebAuthnCredentialRepository webAuthnCredentialRepository;
 
     // Caché para los desafíos de login. La clave es el propio desafío en Base64Url
     private final Map<String, AssertionRequest> loginCache = new ConcurrentHashMap<>();
@@ -53,20 +55,20 @@ public class AuthServiceImpl implements IAuthService {
             JwtProvider jwtProvider,
             RelyingParty relyingParty,
             UserDetailsServiceImpl userDetailsService,
-            /*PasskeyCredentialRepository passkeyRepository,*/ 
             AuthenticationManager authenticationManager,
             RefreshTokenServiceImpl refreshTokenServiceImpl,
             GoogleTokenVerifierServiceImpl googleTokenVerifierService,
-            CredentialRepository credentialRepository
+            CredentialRepository credentialRepository,
+            WebAuthnCredentialRepository webAuthnCredentialRepository
     ) {
         this.jwtProvider = jwtProvider;
         this.relyingParty = relyingParty;
         this.userDetailsService = userDetailsService;
-        //this.passkeyRepository = passkeyRepository;
         this.authenticationManager = authenticationManager;
         this.refreshTokenServiceImpl = refreshTokenServiceImpl;
         this.googleTokenVerifierService = googleTokenVerifierService;
         this.credentialRepository = credentialRepository;
+        this.webAuthnCredentialRepository = webAuthnCredentialRepository;
     }
 
     @Override
@@ -107,10 +109,13 @@ public class AuthServiceImpl implements IAuthService {
 
             if (result.isSuccess()) {
                 // Actualizamos el contador de firmas (prevención de ataques de clonación)
-                //passkeyRepository.findById...
-                    //cred.setSignCount...
-                    //passkeyRepository.save(cred);
-                //});
+                String credentialId = result.getCredentialId().getBase64Url();
+                webAuthnCredentialRepository
+                    .findByCredentialId(credentialId)
+                    .ifPresent(cred -> {
+                        cred.setSignCount(result.getSignatureCount());
+                        webAuthnCredentialRepository.save(cred);
+                    });
 
                 loginCache.remove(challengeId);
 
