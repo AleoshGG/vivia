@@ -246,13 +246,13 @@ public class LesseeServiceImpl implements ILesseeService {
 
             RegisterLesseeBiometricChallengeDto userData = registrationData.getUserData();
 
-            // Crear usuario
+            // Crear usuario (el ID será generado automáticamente por Hibernate)
             UserEntity userEntity = UserEntity.builder()
-                .id(registrationData.getUserId())
                 .name(userData.getName())
                 .paternalSurname(userData.getPaternalSurname())
                 .maternalSurname(userData.getMaternalSurname())
                 .email(userData.getEmail())
+                .photoUrl("No photo")
                 .build();
 
             // Crear credencial tipo BIOMETRIC
