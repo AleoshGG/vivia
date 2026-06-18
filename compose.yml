@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: vivia-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-vivia_dev}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - vivia-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    container_name: vivia-app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_URL=jdbc:postgresql://db:5432/${DB_NAME:-vivia_dev}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+    ports:
+      - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
+
+volumes:
+  vivia-db-data:

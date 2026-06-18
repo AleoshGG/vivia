@@ -2,6 +2,8 @@
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
+# Cache dependencies
+RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn clean package -DskipTests
 
@@ -12,12 +14,9 @@ WORKDIR /app
 # Copiamos el jar desde la etapa de construcción
 COPY --from=build /app/target/*.jar app.jar
 
-# Definimos variables de entorno (pueden ser sobrescritas al correr el contenedor)
-ENV DB_URL=jdbc:postgresql://db-alexis:5432/alexis
-ENV DB_USER=postgres
-ENV DB_PASSWORD=1234567
-ENV SERVER_PORT=8080
+# Entorno por defecto
+ENV SPRING_PROFILES_ACTIVE=dev
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
