@@ -1,10 +1,17 @@
 package aleosh.online.vivia.features.auth.services.impl;
 
 import aleosh.online.vivia.core.config.jwt.JwtProvider;
+import aleosh.online.vivia.features.auth.data.dtos.request.GoogleLoginRequestDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.VerifyLoginDto;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
+import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
+import aleosh.online.vivia.features.auth.data.entities.WebAuthnCredentialEntity;
+import aleosh.online.vivia.features.auth.data.repositories.CredentialRepository;
+import aleosh.online.vivia.features.auth.data.repositories.WebAuthnCredentialRepository;
+import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.auth.services.IAuthService;
-import aleosh.online.vivia.features.users.lessor.data.repositories.PasskeyCredentialRepository;
+import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.yubico.webauthn.AssertionRequest;
 import com.yubico.webauthn.AssertionResult;
 import com.yubico.webauthn.FinishAssertionOptions;
@@ -16,14 +23,20 @@ import com.yubico.webauthn.data.PublicKeyCredential;
 import aleosh.online.vivia.features.auth.data.dtos.request.RefreshTokenRequestDto;
 import aleosh.online.vivia.features.auth.data.entities.RefreshTokenEntity;
 import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
+import aleosh.online.vivia.features.auth.domain.exceptions.AuthException;
+import aleosh.online.vivia.features.auth.domain.exceptions.InvalidChallengeException;
+import aleosh.online.vivia.core.exceptions.DomainException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,9 +46,11 @@ public class AuthServiceImpl implements IAuthService {
     private final JwtProvider jwtProvider;
     private final RelyingParty relyingParty;
     private final UserDetailsServiceImpl userDetailsService;
-    private final PasskeyCredentialRepository passkeyRepository;
     private final AuthenticationManager authenticationManager;
-    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenServiceImpl refreshTokenServiceImpl;
+    private final GoogleTokenVerifierServiceImpl googleTokenVerifierService;
+    private final CredentialRepository credentialRepository;
+    private final WebAuthnCredentialRepository webAuthnCredentialRepository;
 
     // Caché para los desafíos de login. La clave es el propio desafío en Base64Url
     private final Map<String, AssertionRequest> loginCache = new ConcurrentHashMap<>();
@@ -44,16 +59,20 @@ public class AuthServiceImpl implements IAuthService {
             JwtProvider jwtProvider,
             RelyingParty relyingParty,
             UserDetailsServiceImpl userDetailsService,
-            PasskeyCredentialRepository passkeyRepository,
             AuthenticationManager authenticationManager,
-            RefreshTokenService refreshTokenService
+            RefreshTokenServiceImpl refreshTokenServiceImpl,
+            GoogleTokenVerifierServiceImpl googleTokenVerifierService,
+            CredentialRepository credentialRepository,
+            WebAuthnCredentialRepository webAuthnCredentialRepository
     ) {
         this.jwtProvider = jwtProvider;
         this.relyingParty = relyingParty;
         this.userDetailsService = userDetailsService;
-        this.passkeyRepository = passkeyRepository;
         this.authenticationManager = authenticationManager;
-        this.refreshTokenService = refreshTokenService;
+        this.refreshTokenServiceImpl = refreshTokenServiceImpl;
+        this.googleTokenVerifierService = googleTokenVerifierService;
+        this.credentialRepository = credentialRepository;
+        this.webAuthnCredentialRepository = webAuthnCredentialRepository;
     }
 
     @Override
@@ -67,7 +86,7 @@ public class AuthServiceImpl implements IAuthService {
         try {
             return request.toCredentialsGetJson();
         } catch (Exception e) {
-            throw new RuntimeException("Error al generar opciones de login", e);
+            throw new AuthException("Error al generar opciones de login", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -83,7 +102,7 @@ public class AuthServiceImpl implements IAuthService {
             AssertionRequest pendingAssertion = loginCache.get(challengeId);
 
             if (pendingAssertion == null) {
-                throw new RuntimeException("Desafío de login expirado o inválido.");
+                throw new InvalidChallengeException("Desafío de login expirado o inválido.");
             }
 
             // Validar firma criptográfica
@@ -94,10 +113,13 @@ public class AuthServiceImpl implements IAuthService {
 
             if (result.isSuccess()) {
                 // Actualizamos el contador de firmas (prevención de ataques de clonación)
-                passkeyRepository.findById(result.getCredential().getCredentialId().getBytes()).ifPresent(cred -> {
-                    cred.setSignCount(result.getSignatureCount());
-                    passkeyRepository.save(cred);
-                });
+                String credentialId = result.getCredentialId().getBase64Url();
+                webAuthnCredentialRepository
+                    .findByCredentialId(credentialId)
+                    .ifPresent(cred -> {
+                        cred.setSignCount(result.getSignatureCount());
+                        webAuthnCredentialRepository.save(cred);
+                    });
 
                 loginCache.remove(challengeId);
 
@@ -115,19 +137,22 @@ public class AuthServiceImpl implements IAuthService {
                 String jwt = jwtProvider.generateToken(auth);
                 
                 String role = userDetails.getAuthorities().iterator().next().getAuthority();
-                RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(identifier, role);
+                RefreshTokenEntity refreshToken = refreshTokenServiceImpl.createRefreshToken(identifier, role);
                 
                 return new AuthResponseDto(jwt, refreshToken.getToken());
             } else {
-                throw new RuntimeException("La validación de la huella falló.");
+                throw new AuthException("La validación de la huella falló.");
             }
 
+        } catch (DomainException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Error en el proceso de autenticación WebAuthn", e);
+            throw new AuthException("Error en el proceso de autenticación WebAuthn: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
+    @Transactional
     public AuthResponseDto traditionalLogin(LoginRequestDto loginDto) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDto.getIdentifier(), loginDto.getPassword())
@@ -138,8 +163,57 @@ public class AuthServiceImpl implements IAuthService {
         String jwt = jwtProvider.generateToken(authentication);
         
         String role = authentication.getAuthorities().iterator().next().getAuthority();
-        RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(loginDto.getIdentifier(), role);
+        RefreshTokenEntity refreshToken = refreshTokenServiceImpl.createRefreshToken(loginDto.getIdentifier(), role);
         
+        return new AuthResponseDto(jwt, refreshToken.getToken());
+    }
+
+    @Override
+    @Transactional
+    public AuthResponseDto googleLogin(GoogleLoginRequestDto googleLoginDto) {
+        GoogleIdToken.Payload payload = googleTokenVerifierService.verifyIdToken(googleLoginDto.getIdToken());
+
+        String googleId = payload.getSubject();
+        String email = payload.getEmail();
+
+        // Cargar credencial con user, lessor y lessee en una sola query optimizada
+        CredentialEntity credentialEntity = credentialRepository
+                .findByProviderCredentialIdAndCredentialTypeWithUser(googleId, CredentialType.GOOGLE)
+                .orElseThrow(() -> new AuthException(
+                    "No existe una cuenta vinculada a este Google ID. Por favor, regístrate primero.",
+                    HttpStatus.NOT_FOUND
+                ));
+
+        // Obtener el usuario y determinar el rol real desde la base de datos
+        UserEntity userEntity = credentialEntity.getUser();
+
+        String roleFromDB;
+        if (userEntity.getLessor() != null) {
+            roleFromDB = "ROLE_LESSOR";
+        } else if (userEntity.getLessee() != null) {
+            roleFromDB = "ROLE_LESSEE";
+        } else {
+            throw new AuthException("El usuario no tiene un rol asignado", HttpStatus.CONFLICT);
+        }
+
+        // Validar que el rol enviado por el cliente coincide con el de la BD
+        if (!roleFromDB.equals(googleLoginDto.getRole())) {
+            throw new AuthException(
+                "El rol proporcionado (" + googleLoginDto.getRole() +
+                ") no coincide con el rol del usuario registrado (" + roleFromDB + ")",
+                HttpStatus.FORBIDDEN
+            );
+        }
+
+        var authorities = Collections.singletonList(new SimpleGrantedAuthority(roleFromDB));
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                email, null, authorities
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        String jwt = jwtProvider.generateToken(auth);
+        RefreshTokenEntity refreshToken = refreshTokenServiceImpl.createRefreshToken(email, roleFromDB);
+
         return new AuthResponseDto(jwt, refreshToken.getToken());
     }
 
@@ -147,8 +221,8 @@ public class AuthServiceImpl implements IAuthService {
     public AuthResponseDto refreshToken(RefreshTokenRequestDto request) {
         String requestRefreshToken = request.getRefreshToken();
 
-        RefreshTokenEntity refreshTokenEntity = refreshTokenService.findByToken(requestRefreshToken);
-        refreshTokenService.verifyExpiration(refreshTokenEntity);
+        RefreshTokenEntity refreshTokenEntity = refreshTokenServiceImpl.findByToken(requestRefreshToken);
+        refreshTokenServiceImpl.verifyExpiration(refreshTokenEntity);
 
         String userIdentifier = refreshTokenEntity.getUserIdentifier();
         String role = refreshTokenEntity.getRole();
@@ -162,7 +236,7 @@ public class AuthServiceImpl implements IAuthService {
         String jwt = jwtProvider.generateToken(auth);
 
         // Rotation
-        RefreshTokenEntity newRefreshToken = refreshTokenService.createRefreshToken(userIdentifier, role);
+        RefreshTokenEntity newRefreshToken = refreshTokenServiceImpl.createRefreshToken(userIdentifier, role);
 
         return new AuthResponseDto(jwt, newRefreshToken.getToken());
     }

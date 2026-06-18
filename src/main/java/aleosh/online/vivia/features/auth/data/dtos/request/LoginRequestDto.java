@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LoginRequestDto {
-    @NotBlank(message = "El identificador (correo o nombre de empresa) es obligatorio")
-    @Schema(description = "Correo (Arrendatario) o Nombre de empresa (Arrendador)", example = "usuario@example.com")
+    @NotBlank(message = "El identificador correo es obligatorio")
+    @Schema(description = "Correo electrónico", example = "usuario@example.com")
     private String identifier;
 
     @NotBlank(message = "La contraseña es obligatoria")

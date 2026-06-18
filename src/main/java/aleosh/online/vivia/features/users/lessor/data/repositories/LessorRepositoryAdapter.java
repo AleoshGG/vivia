@@ -5,10 +5,12 @@ import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import aleosh.online.vivia.features.users.lessor.data.mappers.LessorMapper;
 import aleosh.online.vivia.features.users.lessor.domain.entities.Lessor;
 import aleosh.online.vivia.features.users.lessor.domain.repositories.ILessorRepository;
+import aleosh.online.vivia.features.users.users.domain.exceptions.UserNotFoundException;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
@@ -33,21 +35,16 @@ public class LessorRepositoryAdapter implements ILessorRepository {
     }
 
     @Override
-    public Optional<Lessor> getByUsername(String username) {
-        Optional<LessorEntity> lessorEntity = lessorRepository.findByCompanyName(username);
+    public Optional<Lessor> getById(UUID id) {
+        Optional<LessorEntity> lessorEntity = lessorRepository.findById(id);
         return lessorEntity.map(lessorMapper::toDomain);
     }
 
     @Override
-    public Optional<Lessor> getByCompanyName(String companyName) {
-        Optional<LessorEntity> lessorEntity = lessorRepository.findByCompanyName(companyName);
-        return  lessorEntity.map(lessorMapper::toDomain);
-    }
-
-    @Override
-    public List<Lessor> getAllLessors() {
-        return lessorRepository.findAll().stream()
-                .map(lessorMapper::toDomain)
-                .collect(Collectors.toList());
+    public void deleteById(UUID id) {
+        if (!lessorRepository.existsById(id)) {
+            throw new UserNotFoundException("User lessor not found.");
+        }
+        lessorRepository.deleteById(id);
     }
 }

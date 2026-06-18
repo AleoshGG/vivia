@@ -19,13 +19,18 @@ public class FirebaseConfig {
 
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
-        System.out.println(firebaseCredentials.contentLength());
+        if (!firebaseCredentials.exists()) {
+            System.err.println("AVISO: No se encontró el archivo de credenciales de Firebase en: " + firebaseCredentials.getURL());
+            return null;
+        }
+
         if (FirebaseApp.getApps().isEmpty()) {
-            InputStream serviceAccount = firebaseCredentials.getInputStream();
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .build();
-            return FirebaseApp.initializeApp(options);
+            try (InputStream serviceAccount = firebaseCredentials.getInputStream()) {
+                FirebaseOptions options = FirebaseOptions.builder()
+                        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                        .build();
+                return FirebaseApp.initializeApp(options);
+            }
         }
         return FirebaseApp.getInstance();
     }
