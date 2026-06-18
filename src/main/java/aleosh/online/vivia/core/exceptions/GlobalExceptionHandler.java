@@ -62,13 +62,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ErrorResponse> handleDomainException(DomainException ex) {
         ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
+                ex.getStatus().value(),
                 "Domain Error",
                 ex.getMessage(),
                 Collections.singletonList("Exception class: " + ex.getClass().getSimpleName())
         );
 
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(errorResponse, ex.getStatus());
     }
 
     @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)

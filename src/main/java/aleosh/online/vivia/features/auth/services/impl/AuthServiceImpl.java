@@ -23,6 +23,10 @@ import com.yubico.webauthn.data.PublicKeyCredential;
 import aleosh.online.vivia.features.auth.data.dtos.request.RefreshTokenRequestDto;
 import aleosh.online.vivia.features.auth.data.entities.RefreshTokenEntity;
 import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
+import aleosh.online.vivia.features.auth.domain.exceptions.AuthException;
+import aleosh.online.vivia.features.auth.domain.exceptions.InvalidChallengeException;
+import aleosh.online.vivia.core.exceptions.DomainException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -82,7 +86,7 @@ public class AuthServiceImpl implements IAuthService {
         try {
             return request.toCredentialsGetJson();
         } catch (Exception e) {
-            throw new RuntimeException("Error al generar opciones de login", e);
+            throw new AuthException("Error al generar opciones de login", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -98,7 +102,7 @@ public class AuthServiceImpl implements IAuthService {
             AssertionRequest pendingAssertion = loginCache.get(challengeId);
 
             if (pendingAssertion == null) {
-                throw new RuntimeException("Desafío de login expirado o inválido.");
+                throw new InvalidChallengeException("Desafío de login expirado o inválido.");
             }
 
             // Validar firma criptográfica
@@ -137,11 +141,13 @@ public class AuthServiceImpl implements IAuthService {
                 
                 return new AuthResponseDto(jwt, refreshToken.getToken());
             } else {
-                throw new RuntimeException("La validación de la huella falló.");
+                throw new AuthException("La validación de la huella falló.");
             }
 
+        } catch (DomainException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Error en el proceso de autenticación WebAuthn", e);
+            throw new AuthException("Error en el proceso de autenticación WebAuthn: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -173,8 +179,9 @@ public class AuthServiceImpl implements IAuthService {
         // Cargar credencial con user, lessor y lessee en una sola query optimizada
         CredentialEntity credentialEntity = credentialRepository
                 .findByProviderCredentialIdAndCredentialTypeWithUser(googleId, CredentialType.GOOGLE)
-                .orElseThrow(() -> new RuntimeException(
-                    "No existe una cuenta vinculada a este Google ID. Por favor, regístrate primero."
+                .orElseThrow(() -> new AuthException(
+                    "No existe una cuenta vinculada a este Google ID. Por favor, regístrate primero.",
+                    HttpStatus.NOT_FOUND
                 ));
 
         // Obtener el usuario y determinar el rol real desde la base de datos
@@ -186,14 +193,15 @@ public class AuthServiceImpl implements IAuthService {
         } else if (userEntity.getLessee() != null) {
             roleFromDB = "ROLE_LESSEE";
         } else {
-            throw new RuntimeException("El usuario no tiene un rol asignado");
+            throw new AuthException("El usuario no tiene un rol asignado", HttpStatus.CONFLICT);
         }
 
         // Validar que el rol enviado por el cliente coincide con el de la BD
         if (!roleFromDB.equals(googleLoginDto.getRole())) {
-            throw new RuntimeException(
+            throw new AuthException(
                 "El rol proporcionado (" + googleLoginDto.getRole() +
-                ") no coincide con el rol del usuario registrado (" + roleFromDB + ")"
+                ") no coincide con el rol del usuario registrado (" + roleFromDB + ")",
+                HttpStatus.FORBIDDEN
             );
         }
 

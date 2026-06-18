@@ -2,7 +2,10 @@ package aleosh.online.vivia.features.auth.services.impl;
 
 import aleosh.online.vivia.features.auth.data.entities.RefreshTokenEntity;
 import aleosh.online.vivia.features.auth.data.repositories.RefreshTokenRepository;
+import aleosh.online.vivia.features.auth.domain.exceptions.AuthException;
+import aleosh.online.vivia.features.auth.domain.exceptions.TokenExpiredException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +41,7 @@ public class RefreshTokenServiceImpl {
     public RefreshTokenEntity verifyExpiration(RefreshTokenEntity token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);
-            throw new RuntimeException("El Refresh Token expiró. Por favor, inicie sesión nuevamente.");
+            throw new TokenExpiredException("El Refresh Token expiró. Por favor, inicie sesión nuevamente.");
         }
         return token;
     }
@@ -50,6 +53,6 @@ public class RefreshTokenServiceImpl {
 
     public RefreshTokenEntity findByToken(String token) {
         return refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Refresh Token no encontrado en la base de datos"));
+                .orElseThrow(() -> new AuthException("Refresh Token no encontrado en la base de datos", HttpStatus.NOT_FOUND));
     }
 }

@@ -19,6 +19,11 @@ import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
 import aleosh.online.vivia.features.users.users.domain.exceptions.UserAlreadyExistsException;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import aleosh.online.vivia.features.users.users.domain.exceptions.BiometricException;
+import aleosh.online.vivia.features.users.users.domain.exceptions.UntrustedAttestationException;
+import aleosh.online.vivia.features.auth.domain.exceptions.InvalidChallengeException;
+import aleosh.online.vivia.core.exceptions.DomainException;
+import org.springframework.http.HttpStatus;
 import com.yubico.webauthn.RelyingParty;
 import com.yubico.webauthn.RegistrationResult;
 import com.yubico.webauthn.FinishRegistrationOptions;
@@ -206,7 +211,7 @@ public class LesseeServiceImpl implements ILesseeService {
             return options.toCredentialsCreateJson();
         } catch (Exception e) {
             registrationCache.remove(challengeId);
-            throw new RuntimeException("Error generando challenge de registro biométrico", e);
+            throw new BiometricException("Error generando challenge de registro biométrico", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -224,7 +229,7 @@ public class LesseeServiceImpl implements ILesseeService {
             // Buscar datos en caché
             BiometricRegistrationData registrationData = registrationCache.get(challengeId);
             if (registrationData == null) {
-                throw new RuntimeException("Challenge de registro expirado o inválido");
+                throw new InvalidChallengeException("Challenge de registro expirado o inválido");
             }
 
             // Verificar la firma criptográfica
@@ -236,7 +241,7 @@ public class LesseeServiceImpl implements ILesseeService {
             );
 
             if (!result.isAttestationTrusted()) {
-                throw new RuntimeException("Attestation no confiable");
+                throw new UntrustedAttestationException("Attestation no confiable");
             }
 
             RegisterLesseeBiometricChallengeDto userData = registrationData.getUserData();
@@ -297,8 +302,10 @@ public class LesseeServiceImpl implements ILesseeService {
 
             return new AuthResponseDto(jwt, refreshToken);
 
+        } catch (DomainException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Error en verificación de registro biométrico: " + e.getMessage(), e);
+            throw new BiometricException("Error en verificación de registro biométrico: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

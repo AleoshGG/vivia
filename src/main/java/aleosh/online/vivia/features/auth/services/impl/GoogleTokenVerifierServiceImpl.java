@@ -9,6 +9,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 
+import aleosh.online.vivia.features.auth.domain.exceptions.AuthException;
+import aleosh.online.vivia.features.auth.domain.exceptions.InvalidTokenException;
+import aleosh.online.vivia.core.exceptions.DomainException;
+import org.springframework.http.HttpStatus;
+
 @Service
 public class GoogleTokenVerifierServiceImpl {
 
@@ -27,13 +32,15 @@ public class GoogleTokenVerifierServiceImpl {
             GoogleIdToken googleIdToken = verifier.verify(idToken);
 
             if (googleIdToken == null) {
-                throw new RuntimeException("ID Token inválido");
+                throw new InvalidTokenException("ID Token inválido");
             }
 
             return googleIdToken.getPayload();
 
+        } catch (DomainException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Error al verificar el ID Token de Google", e);
+            throw new AuthException("Error al verificar el ID Token de Google: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

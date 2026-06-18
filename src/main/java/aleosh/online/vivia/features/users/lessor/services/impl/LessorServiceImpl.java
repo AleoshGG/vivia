@@ -36,6 +36,11 @@ import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import aleosh.online.vivia.features.users.lessor.data.repositories.LessorRepository;
 import aleosh.online.vivia.features.users.lessor.services.ILessorService;
 import aleosh.online.vivia.features.users.lessor.services.mappers.LessorMapper;
+import aleosh.online.vivia.features.users.users.domain.exceptions.BiometricException;
+import aleosh.online.vivia.features.users.users.domain.exceptions.UntrustedAttestationException;
+import aleosh.online.vivia.features.auth.domain.exceptions.InvalidChallengeException;
+import aleosh.online.vivia.core.exceptions.DomainException;
+import org.springframework.http.HttpStatus;
 import com.yubico.webauthn.RelyingParty;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -236,7 +241,7 @@ public class LessorServiceImpl implements ILessorService {
             return options.toCredentialsCreateJson();
         } catch (Exception e) {
             registrationCache.remove(challengeId);
-            throw new RuntimeException("Error generando challenge de registro biométrico", e);
+            throw new BiometricException("Error generando challenge de registro biométrico", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -254,7 +259,7 @@ public class LessorServiceImpl implements ILessorService {
             // Buscar datos en caché
             BiometricRegistrationData registrationData = registrationCache.get(challengeId);
             if (registrationData == null) {
-                throw new RuntimeException("Challenge de registro expirado o inválido");
+                throw new InvalidChallengeException("Challenge de registro expirado o inválido");
             }
 
             // Verificar la firma criptográfica
@@ -266,7 +271,7 @@ public class LessorServiceImpl implements ILessorService {
             );
 
             if (!result.isAttestationTrusted()) {
-                throw new RuntimeException("Attestation no confiable");
+                throw new UntrustedAttestationException("Attestation no confiable");
             }
 
             RegisterLessorBiometricChallengeDto userData = registrationData.getUserData();
@@ -328,8 +333,10 @@ public class LessorServiceImpl implements ILessorService {
 
             return new AuthResponseDto(jwt, refreshToken);
 
+        } catch (DomainException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Error en verificación de registro biométrico: " + e.getMessage(), e);
+            throw new BiometricException("Error en verificación de registro biométrico: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
