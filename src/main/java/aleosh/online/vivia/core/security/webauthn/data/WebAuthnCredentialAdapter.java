@@ -68,25 +68,25 @@ public class WebAuthnCredentialAdapter implements CredentialRepository {
 
     @Override
     public Optional<ByteArray> getUserHandleForUsername(String username) {
-        // Buscar usuario por email y devolver su ID como userHandle
+        // Buscar usuario por email y devolver su userHandle almacenado
         return userRepository.findByEmail(username)
-            .map(user -> new ByteArray(user.getId().toString().getBytes(StandardCharsets.UTF_8)));
+            .flatMap(user -> webAuthnCredentialRepository.findByUser(user).stream().findFirst())
+            .map(cred -> {
+                try {
+                    return ByteArray.fromBase64Url(cred.getUserHandle());
+                } catch (Exception e) {
+                    return null;
+                }
+            });
     }
 
     @Override
     public Optional<String> getUsernameForUserHandle(ByteArray userHandle) {
-        // Convertir userHandle (UUID en bytes) a String
-        String userIdStr = new String(userHandle.getBytes(), StandardCharsets.UTF_8);
+        // Buscar credencial por userHandle y devolver el email del usuario
+        String userHandleBase64 = userHandle.getBase64Url();
 
-        try {
-            UUID userId = UUID.fromString(userIdStr);
-
-            // Buscar credencial por user_id
-            return webAuthnCredentialRepository.findByUser_Id(userId)
-                    .map(credential -> credential.getUser().getEmail());
-        } catch (IllegalArgumentException e) {
-            return Optional.empty();
-        }
+        return webAuthnCredentialRepository.findByUserHandle(userHandleBase64)
+                .map(credential -> credential.getUser().getEmail());
     }
 
     @Override
@@ -110,13 +110,18 @@ public class WebAuthnCredentialAdapter implements CredentialRepository {
 
         return webAuthnCredentialRepository
                 .findByCredentialId(credIdBase64)
-                .map(entity -> RegisteredCredential.builder()
-                        .credentialId(credentialId)
-                        .userHandle(new ByteArray(entity.getUser().getId().toString().getBytes(StandardCharsets.UTF_8)))
-                        .publicKeyCose(ByteArray.fromBase64(entity.getPublicKey()))
-                        .signatureCount(entity.getSignCount())
-                        .build()
-                )
+                .map(entity -> {
+                    try {
+                        return RegisteredCredential.builder()
+                                .credentialId(credentialId)
+                                .userHandle(ByteArray.fromBase64Url(entity.getUserHandle()))
+                                .publicKeyCose(ByteArray.fromBase64(entity.getPublicKey()))
+                                .signatureCount(entity.getSignCount())
+                                .build();
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
                 .map(Set::of)
                 .orElse(Set.of());
     }

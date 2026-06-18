@@ -14,6 +14,8 @@ public interface WebAuthnCredentialRepository extends JpaRepository<WebAuthnCred
 
     Optional<WebAuthnCredentialEntity> findByCredentialId(String credentialId);
 
+    Optional<WebAuthnCredentialEntity> findByUserHandle(String userHandle);
+
     Optional<WebAuthnCredentialEntity> findByUser_Id(UUID userId);
 
     List<WebAuthnCredentialEntity> findByUser(UserEntity user);

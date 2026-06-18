@@ -285,6 +285,9 @@ public class LessorServiceImpl implements ILessorService {
 
             RegisterLessorBiometricChallengeDto userData = registrationData.getUserData();
 
+            // Obtener el userHandle que se usó en el challenge
+            String userHandle = registrationData.getOptions().getUser().getId().getBase64Url();
+
             // Crear usuario (el ID será generado automáticamente por Hibernate)
             UserEntity userEntity = UserEntity.builder()
                 .name(userData.getName())
@@ -303,9 +306,10 @@ public class LessorServiceImpl implements ILessorService {
                 .build();
             userEntity.getCredentials().add(credentialEntity);
 
-            // Crear credencial WebAuthn
+            // Crear credencial WebAuthn con userHandle
             WebAuthnCredentialEntity webAuthnCred = WebAuthnCredentialEntity.builder()
                 .credentialId(result.getKeyId().getId().getBase64Url())
+                .userHandle(userHandle)
                 .user(userEntity)
                 .publicKey(result.getPublicKeyCose().getBase64())
                 .signCount(result.getSignatureCount())
