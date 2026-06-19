@@ -13,6 +13,7 @@ import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.auth.services.IAuthService;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.yubico.webauthn.AssertionRequest;
 import com.yubico.webauthn.AssertionResult;
@@ -139,33 +140,47 @@ public class AuthServiceImpl implements IAuthService {
                     .build());
 
             if (result.isSuccess()) {
-                // Actualizamos el contador de firmas (prevención de ataques de clonación)
+                // 1. Obtener credential_id de la respuesta
                 String credentialId = result.getCredentialId().getBase64Url();
-                webAuthnCredentialRepository
+
+                // 2. Buscar la credencial en la BD (NO por email)
+                WebAuthnCredentialEntity credential = webAuthnCredentialRepository
                     .findByCredentialId(credentialId)
-                    .ifPresent(cred -> {
-                        cred.setSignCount(result.getSignatureCount());
-                        webAuthnCredentialRepository.save(cred);
-                    });
+                    .orElseThrow(() -> new AuthException(
+                        "Credencial no encontrada",
+                        HttpStatus.NOT_FOUND
+                    ));
 
-                loginCache.remove(challengeId);
+                // 3. Actualizar el contador de firmas (prevención de ataques de clonación)
+                credential.setSignCount(result.getSignatureCount());
+                webAuthnCredentialRepository.save(credential);
 
-                // Yubico ya averiguó el nombre de usuario (companyName o email) usando nuestro Adapter
-                String identifier = result.getUsername();
+                // 4. Obtener el usuario de la credencial
+                UserEntity user = credential.getUser();
+                String email = user.getEmail();
 
-                // Carga de roles y generación de JWT de forma transparente usando tu infraestructura de la Fase 2
-                UserDetails userDetails = userDetailsService.loadUserByUsername(identifier);
+                // 5. Determinar el rol del usuario
+                String role;
+                if (user.getLessor() != null) {
+                    role = "ROLE_LESSOR";
+                } else if (user.getLessee() != null) {
+                    role = "ROLE_LESSEE";
+                } else {
+                    throw new AuthException("El usuario no tiene un rol asignado", HttpStatus.CONFLICT);
+                }
 
+                // 6. Generar autenticación y tokens
+                var authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities()
+                    email, null, authorities
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
                 String jwt = jwtProvider.generateToken(auth);
-                
-                String role = userDetails.getAuthorities().iterator().next().getAuthority();
-                RefreshTokenEntity refreshToken = refreshTokenServiceImpl.createRefreshToken(identifier, role);
-                
+                RefreshTokenEntity refreshToken = refreshTokenServiceImpl.createRefreshToken(email, role);
+
+                loginCache.remove(challengeId);
+
                 return new AuthResponseDto(jwt, refreshToken.getToken());
             } else {
                 throw new AuthException("La validación de la huella falló.");
