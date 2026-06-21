@@ -1,56 +1,75 @@
 package aleosh.online.vivia.features.properties.properties.data.dtos.request;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Schema(description = "Modelo para la creación de una propiedad")
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class CreatePropertyDto {
 
-    @Schema(description = "Título de la propiedad", example = "Departamento céntrico")
-    @NotBlank(message = "El título es obligatorio")
-    private String title;
+    @NotNull(message = "El ID del arrendador es obligatorio")
+    private UUID lessorId;
 
-    @Schema(description = "Descripción detallada", example = "Hermoso departamento amueblado de 2 recámaras...")
-    @NotBlank(message = "La descripción es obligatoria")
-    private String description;
+    @NotNull(message = "El ID del tipo de propiedad es obligatorio")
+    private UUID propertyTypeId;
 
-    @Schema(description = "Precio mensual de renta", example = "5000.00")
-    @NotNull(message = "El precio es obligatorio")
-    @PositiveOrZero(message = "El precio no puede ser negativo")
-    private Double price;
+    @NotNull(message = "El ID de la colonia es obligatorio")
+    private UUID neighborhoodId;
 
-    @Schema(description = "Detalles de la dirección")
-    @NotNull(message = "Los detalles de la dirección son obligatorios")
+    @NotBlank(message = "La calle es obligatoria")
+    @Size(max = 100, message = "La calle no debe exceder 100 caracteres")
+    private String street;
+
+    @NotBlank(message = "El número exterior es obligatorio")
+    @Size(max = 10, message = "El número exterior no debe exceder 10 caracteres")
+    private String exteriorNumber;
+
+    @Size(max = 10, message = "El número interior no debe exceder 10 caracteres")
+    private String interiorNumber;
+
+    private Boolean isAvailableToRent = false;
+
+    @NotNull(message = "El área es obligatoria")
+    @DecimalMin(value = "0.01", message = "El área debe ser mayor a 0")
+    private BigDecimal areaM2;
+
+    @NotNull(message = "El número de recámaras es obligatorio")
+    @Min(value = 0, message = "El número de recámaras debe ser 0 o mayor")
+    private Integer bedrooms;
+
+    @NotNull(message = "El número de baños es obligatorio")
+    @DecimalMin(value = "0.5", message = "El número de baños debe ser al menos 0.5")
+    private BigDecimal bathrooms;
+
+    @Min(value = 0, message = "El número de estacionamientos debe ser 0 o mayor")
+    private Integer parkingSpaces;
+
+    @Min(value = 1900, message = "El año de construcción debe ser 1900 o posterior")
+    @Max(value = 2100, message = "El año de construcción debe ser 2100 o anterior")
+    private Integer constructionYear;
+
+    private Boolean isCondominium = false;
+
+    @NotNull(message = "El precio de renta es obligatorio")
+    @DecimalMin(value = "0.01", message = "El precio de renta debe ser mayor a 0")
+    private BigDecimal listedPrice;
+
+    @NotNull(message = "El precio por m2 es obligatorio")
+    @DecimalMin(value = "0.01", message = "El precio por m2 debe ser mayor a 0")
+    private BigDecimal pricePerM2;
+
     @Valid
-    private aleosh.online.vivia.features.properties.address.data.dtos.AddressDto address;
-
-    @Schema(description = "Tipo de departamento/propiedad", example = "Departamento")
-    private String departmentType;
-
-    @Schema(description = "Área en metros cuadrados", example = "85.5")
-    @PositiveOrZero(message = "El área no puede ser negativa")
-    private Double area;
-
-    @Schema(description = "Número de habitaciones", example = "2")
-    @PositiveOrZero(message = "Las habitaciones no pueden ser negativas")
-    private int roomsNumber;
-
-    @Schema(description = "Número de baños", example = "1")
-    @PositiveOrZero(message = "Los baños no pueden ser negativos")
-    private int bathroomsNumber;
-
-    @Schema(description = "Lugares de estacionamiento", example = "1")
-    @PositiveOrZero(message = "El estacionamiento no puede ser negativo")
-    private int parkingNumber;
+    @Builder.Default
+    private List<PropertyMediaDto> media = new ArrayList<>();
 }
