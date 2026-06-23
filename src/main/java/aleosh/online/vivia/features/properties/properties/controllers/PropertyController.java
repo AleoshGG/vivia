@@ -26,23 +26,23 @@ public class PropertyController {
         this.propertyService = propertyService;
     }
 
-    @Operation(
-            summary = "Crear propiedad",
-            description = "Registra una nueva propiedad en el sistema. Crea automáticamente la dirección asociada y opcionalmente puede incluir imágenes y videos de la propiedad."
-    )
-    @PostMapping(consumes = "application/json", produces = "application/json")
-    public ResponseEntity<BaseResponse<PropertyResponseDto>> create(
-            @Valid @RequestBody CreatePropertyDto request
-    ) {
-        PropertyResponseDto response = propertyService.create(request);
-
-        return new BaseResponse<>(
-                true,
-                response,
-                "Propiedad creada exitosamente",
-                HttpStatus.CREATED
-        ).buildResponseEntity();
-    }
+//    @Operation(
+//            summary = "Crear propiedad",
+//            description = "Registra una nueva propiedad en el sistema. Crea automáticamente la dirección asociada y opcionalmente puede incluir imágenes y videos de la propiedad."
+//    )
+//    @PostMapping(consumes = "application/json", produces = "application/json")
+//    public ResponseEntity<BaseResponse<PropertyResponseDto>> create(
+//            @Valid @RequestBody CreatePropertyDto request
+//    ) {
+//        PropertyResponseDto response = propertyService.create(request);
+//
+//        return new BaseResponse<>(
+//                true,
+//                response,
+//                "Propiedad creada exitosamente",
+//                HttpStatus.CREATED
+//        ).buildResponseEntity();
+//    }
 
     @Operation(
             summary = "Obtener propiedad por ID",

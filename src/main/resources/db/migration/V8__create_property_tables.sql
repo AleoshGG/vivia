@@ -13,13 +13,16 @@ CREATE TABLE IF NOT EXISTS address (
 
 CREATE INDEX IF NOT EXISTS idx_address_neighborhood_id ON address(neighborhood_id);
 
--- Property table
-CREATE TABLE IF NOT EXISTS property (
+-- Properties table
+CREATE TABLE IF NOT EXISTS properties (
     id                   VARCHAR(50)    NOT NULL,
     lessor_id            VARCHAR(50)    NOT NULL,
     property_type_id     VARCHAR(50)    NOT NULL,
     address_id           VARCHAR(50)    NOT NULL UNIQUE,
     is_available_to_rent BOOLEAN        NOT NULL DEFAULT false,
+
+    title                VARCHAR(200)   NOT NULL,
+    description          TEXT           NOT NULL,
 
     area_m2        DECIMAL(8,2)   NOT NULL,
     bedrooms             SMALLINT       NOT NULL,
@@ -45,10 +48,10 @@ CREATE TABLE IF NOT EXISTS property (
     CONSTRAINT chk_bathrooms_valid CHECK (bathrooms > 0)
 );
 
-CREATE INDEX IF NOT EXISTS idx_property_lessor_id ON property(lessor_id);
-CREATE INDEX IF NOT EXISTS idx_property_address_id ON property(address_id);
-CREATE INDEX IF NOT EXISTS idx_property_type_id ON property(property_type_id);
-CREATE INDEX IF NOT EXISTS idx_property_is_available_to_rent ON property(is_available_to_rent);
+CREATE INDEX IF NOT EXISTS idx_property_lessor_id ON properties(lessor_id);
+CREATE INDEX IF NOT EXISTS idx_property_address_id ON properties(address_id);
+CREATE INDEX IF NOT EXISTS idx_property_type_id ON properties(property_type_id);
+CREATE INDEX IF NOT EXISTS idx_property_is_available_to_rent ON properties(is_available_to_rent);
 
 -- Many-to-many relationship table between properties and amenities
 CREATE TABLE IF NOT EXISTS property_amenity (
@@ -57,7 +60,7 @@ CREATE TABLE IF NOT EXISTS property_amenity (
 
     PRIMARY KEY (property_id, amenity_id),
 
-    CONSTRAINT fk_property_amenity_property FOREIGN KEY (property_id) REFERENCES property(id) ON DELETE CASCADE,
+    CONSTRAINT fk_property_amenity_property FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
     CONSTRAINT fk_property_amenity_amenity FOREIGN KEY (amenity_id) REFERENCES amenity(id) ON DELETE CASCADE
 );
 

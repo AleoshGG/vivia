@@ -63,6 +63,8 @@ public class PropertyServiceImpl implements IPropertyService {
                 .propertyTypeId(request.getPropertyTypeId())
                 .addressId(savedAddress.getId())
                 .isAvailableToRent(request.getIsAvailableToRent() != null ? request.getIsAvailableToRent() : false)
+                .title(request.getTitle())
+                .description(request.getDescription())
                 .areaM2(request.getAreaM2())
                 .bedrooms(request.getBedrooms())
                 .bathrooms(request.getBathrooms())

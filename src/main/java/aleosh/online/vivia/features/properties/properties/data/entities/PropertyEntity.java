@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "property")
+@Table(name = "properties")
 @Data
 @Builder
 @NoArgsConstructor
@@ -52,6 +52,12 @@ public class PropertyEntity {
 
     @Column(name = "is_available_to_rent", nullable = false)
     private boolean isAvailableToRent = false;
+
+    @Column(name = "title", nullable = false, length = 200)
+    private String title;
+
+    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
+    private String description;
 
     @Column(name = "area_m2", nullable = false, precision = 8, scale = 2)
     private BigDecimal areaM2;

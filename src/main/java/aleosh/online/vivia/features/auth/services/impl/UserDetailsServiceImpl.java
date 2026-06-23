@@ -1,11 +1,11 @@
 package aleosh.online.vivia.features.auth.services.impl;
 
+import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
 import aleosh.online.vivia.features.auth.data.repositories.CredentialRepository;
 import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -36,7 +36,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             role = "ROLE_LESSEE";
         }
 
-        return new User(
+        return new CustomUserDetails(
+                user.getId(),
                 user.getEmail(),
                 credential.getSecretData(),
                 Collections.singletonList(new SimpleGrantedAuthority(role))
@@ -47,7 +48,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         CredentialEntity credential = credentialRepository.findByUserEmailAndCredentialType(identifier, CredentialType.PASSWORD)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + identifier));
 
-        return new User(
+        UserEntity user = credential.getUser();
+
+        return new CustomUserDetails(
+                user.getId(),
                 identifier,
                 credential.getSecretData(),
                 Collections.singletonList(new SimpleGrantedAuthority(role))

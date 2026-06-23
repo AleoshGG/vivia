@@ -22,6 +22,9 @@ public class PropertyResponseDto {
     private UUID addressId;
     private boolean isAvailableToRent;
 
+    private String title;
+    private String description;
+
     private BigDecimal areaM2;
     private Integer bedrooms;
     private BigDecimal bathrooms;

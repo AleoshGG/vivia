@@ -9,6 +9,7 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
 public class AwsConfig {
@@ -27,20 +28,33 @@ public class AwsConfig {
 
     @Bean
     public S3Client s3Client() {
-        AwsCredentialsProvider credentialsProvider;
-
-        if (sessionToken != null && !sessionToken.isEmpty()) {
-            credentialsProvider = StaticCredentialsProvider.create(
-                    AwsSessionCredentials.create(accessKey, secretKey, sessionToken));
-        } else {
-            credentialsProvider = StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(accessKey, secretKey));
-        }
+        AwsCredentialsProvider credentialsProvider = getCredentialsProvider();
 
         return S3Client.builder()
                 .region(Region.of(region))
                 .credentialsProvider(credentialsProvider)
                 .build();
+    }
+
+    @Bean
+    public S3Presigner s3Presigner() {
+        AwsCredentialsProvider credentialsProvider = getCredentialsProvider();
+
+        return S3Presigner.builder()
+                .region(Region.of(region))
+                .credentialsProvider(credentialsProvider)
+                .build();
+    }
+
+    // Método helper para reutilizar lógica de credenciales
+    private AwsCredentialsProvider getCredentialsProvider() {
+        if (sessionToken != null && !sessionToken.isEmpty()) {
+            return StaticCredentialsProvider.create(
+                    AwsSessionCredentials.create(accessKey, secretKey, sessionToken));
+        } else {
+            return StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(accessKey, secretKey));
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 package aleosh.online.vivia.core.config.jwt;
 
+import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtProvider {
@@ -30,7 +32,12 @@ public class JwtProvider {
 
     public String generateToken(Authentication authentication) {
         String username;
-        if (authentication.getPrincipal() instanceof UserDetails userDetails) {
+        UUID userId = null;
+
+        if (authentication.getPrincipal() instanceof CustomUserDetails customUserDetails) {
+            username = customUserDetails.getUsername();
+            userId = customUserDetails.getUserId();
+        } else if (authentication.getPrincipal() instanceof UserDetails userDetails) {
             username = userDetails.getUsername();
         } else {
             username = authentication.getPrincipal().toString();
@@ -42,9 +49,16 @@ public class JwtProvider {
                 .map(GrantedAuthority::getAuthority)
                 .orElse("ROLE_USER");
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .setSubject(username) // Guardará el companyName o el email
-                .claim("role", role) // Agregamos el rol al payload del token
+                .claim("role", role); // Agregamos el rol al payload del token
+
+        // Agregar userId si está disponible
+        if (userId != null) {
+            builder.claim("userId", userId.toString());
+        }
+
+        return builder
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(new Date().getTime() + expiration * 1000L))
                 .signWith(getSecretKey())
@@ -68,6 +82,18 @@ public class JwtProvider {
                 .parseClaimsJws(token)
                 .getBody()
                 .get("role", String.class);
+    }
+
+    // Método para extraer el userId del token
+    public UUID getUserIdFromToken(String token) {
+        String userIdString = Jwts.parserBuilder()
+                .setSigningKey(getSecretKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", String.class);
+
+        return userIdString != null ? UUID.fromString(userIdString) : null;
     }
 
     public boolean validateToken(String token) {

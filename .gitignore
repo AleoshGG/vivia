@@ -34,8 +34,8 @@ build/
 
 .env
 
-DOCUMENTATION.md
-
 data/
 
+#IA
 .claude
+CLAUDE.md

@@ -1,5 +1,6 @@
 package aleosh.online.vivia.features.auth.services.impl;
 
+import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.core.config.jwt.JwtProvider;
 import aleosh.online.vivia.features.auth.data.dtos.request.BiometricLoginChallengeDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.GoogleLoginRequestDto;
@@ -167,8 +168,14 @@ public class AuthServiceImpl implements IAuthService {
 
                 // 6. Generar autenticación y tokens
                 var authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
+                CustomUserDetails userDetails = new CustomUserDetails(
+                    user.getId(),
+                    email,
+                    null,
+                    authorities
+                );
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    email, null, authorities
+                    userDetails, null, authorities
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
@@ -244,8 +251,14 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         var authorities = Collections.singletonList(new SimpleGrantedAuthority(roleFromDB));
+        CustomUserDetails userDetails = new CustomUserDetails(
+                userEntity.getId(),
+                email,
+                null,
+                authorities
+        );
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                email, null, authorities
+                userDetails, null, authorities
         );
         SecurityContextHolder.getContext().setAuthentication(auth);
 

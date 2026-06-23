@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS property_media (
 
     PRIMARY KEY (id),
 
-    CONSTRAINT fk_property_media_property FOREIGN KEY (property_id) REFERENCES property(id) ON DELETE CASCADE,
+    CONSTRAINT fk_property_media_property FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
     CONSTRAINT chk_media_type CHECK (type IN ('IMAGE', 'VIDEO'))
 );
 

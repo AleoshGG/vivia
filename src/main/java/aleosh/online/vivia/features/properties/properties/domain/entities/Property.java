@@ -12,6 +12,9 @@ public class Property {
     private final UUID addressId;
     private final boolean isAvailableToRent;
 
+    private final String title;
+    private final String description;
+
     private final BigDecimal areaM2;
     private final Integer bedrooms;
     private final BigDecimal bathrooms;
@@ -32,6 +35,8 @@ public class Property {
         this.propertyTypeId = builder.propertyTypeId;
         this.addressId = builder.addressId;
         this.isAvailableToRent = builder.isAvailableToRent;
+        this.title = builder.title;
+        this.description = builder.description;
         this.areaM2 = builder.areaM2;
         this.bedrooms = builder.bedrooms;
         this.bathrooms = builder.bathrooms;
@@ -59,6 +64,18 @@ public class Property {
 
         if (builder.addressId == null) {
             throw new InvalidPropertyException("Address ID is required");
+        }
+
+        if (builder.title == null || builder.title.trim().isEmpty()) {
+            throw new InvalidPropertyException("Title is required");
+        }
+
+        if (builder.title.length() > 200) {
+            throw new InvalidPropertyException("Title must not exceed 200 characters");
+        }
+
+        if (builder.description == null || builder.description.trim().isEmpty()) {
+            throw new InvalidPropertyException("Description is required");
         }
 
         if (builder.areaM2 == null || builder.areaM2.compareTo(BigDecimal.ZERO) <= 0) {
@@ -92,6 +109,8 @@ public class Property {
     public UUID getPropertyTypeId() { return propertyTypeId; }
     public UUID getAddressId() { return addressId; }
     public boolean isAvailableToRent() { return isAvailableToRent; }
+    public String getTitle() { return title; }
+    public String getDescription() { return description; }
     public BigDecimal getAreaM2() { return areaM2; }
     public Integer getBedrooms() { return bedrooms; }
     public BigDecimal getBathrooms() { return bathrooms; }
@@ -109,6 +128,9 @@ public class Property {
         private UUID propertyTypeId;
         private UUID addressId;
         private boolean isAvailableToRent = false;
+
+        private String title;
+        private String description;
 
         private BigDecimal areaM2;
         private Integer bedrooms;
@@ -128,6 +150,8 @@ public class Property {
         public Builder propertyTypeId(UUID propertyTypeId) { this.propertyTypeId = propertyTypeId; return this; }
         public Builder addressId(UUID addressId) { this.addressId = addressId; return this; }
         public Builder isAvailableToRent(boolean isAvailableToRent) { this.isAvailableToRent = isAvailableToRent; return this; }
+        public Builder title(String title) { this.title = title; return this; }
+        public Builder description(String description) { this.description = description; return this; }
         public Builder areaM2(BigDecimal areaM2) { this.areaM2 = areaM2; return this; }
         public Builder bedrooms(Integer bedrooms) { this.bedrooms = bedrooms; return this; }
         public Builder bathrooms(BigDecimal bathrooms) { this.bathrooms = bathrooms; return this; }

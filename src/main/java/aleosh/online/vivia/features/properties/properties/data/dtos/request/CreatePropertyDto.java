@@ -40,6 +40,13 @@ public class CreatePropertyDto {
 
     private Boolean isAvailableToRent = false;
 
+    @NotBlank(message = "El título es obligatorio")
+    @Size(max = 200, message = "El título no debe exceder 200 caracteres")
+    private String title;
+
+    @NotBlank(message = "La descripción es obligatoria")
+    private String description;
+
     @NotNull(message = "El área es obligatoria")
     @DecimalMin(value = "0.01", message = "El área debe ser mayor a 0")
     private BigDecimal areaM2;
