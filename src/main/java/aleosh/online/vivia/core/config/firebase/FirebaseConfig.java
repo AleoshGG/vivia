@@ -1,8 +1,11 @@
 package aleosh.online.vivia.core.config.firebase;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.Firestore;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.cloud.FirestoreClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -18,12 +21,8 @@ public class FirebaseConfig {
     private Resource firebaseCredentials;
 
     @Bean
+    @ConditionalOnProperty(name = "firebase.enabled", havingValue = "true")
     public FirebaseApp firebaseApp() throws IOException {
-        if (!firebaseCredentials.exists()) {
-            System.err.println("AVISO: No se encontró el archivo de credenciales de Firebase en: " + firebaseCredentials.getURL());
-            return null;
-        }
-
         if (FirebaseApp.getApps().isEmpty()) {
             try (InputStream serviceAccount = firebaseCredentials.getInputStream()) {
                 FirebaseOptions options = FirebaseOptions.builder()
@@ -33,5 +32,11 @@ public class FirebaseConfig {
             }
         }
         return FirebaseApp.getInstance();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "firebase.enabled", havingValue = "true")
+    public Firestore firestore(FirebaseApp firebaseApp) {
+        return FirestoreClient.getFirestore(firebaseApp);
     }
 }

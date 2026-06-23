@@ -8,6 +8,9 @@ import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesse
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseePasswordDto;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +60,65 @@ public class LesseeController {
 
     @Operation(
             summary = "Paso 1: Solicitar desafío de registro biométrico",
-            description = "Genera un challenge WebAuthn para iniciar el registro con huella digital."
+            description = """
+                    Genera un challenge WebAuthn para iniciar el registro de credencial biométrica (huella digital).
+
+                    El campo `data` contiene un objeto `PublicKeyCredentialCreationOptions` serializado con la siguiente estructura:
+                    - `publicKey.rp`: información del Relying Party (nombre e identificador de dominio de la API).
+                    - `publicKey.user.name`: correo electrónico del usuario.
+                    - `publicKey.user.displayName`: nombre completo del usuario.
+                    - `publicKey.user.id`: identificador único del usuario codificado en Base64URL.
+                    - `publicKey.challenge`: cadena Base64URL única y de un solo uso para prevenir ataques de repetición.
+                    - `publicKey.pubKeyCredParams`: lista de algoritmos criptográficos aceptados (ej. ES256 = -7, RS256 = -257).
+                    - `publicKey.excludeCredentials`: lista de credenciales ya registradas para evitar duplicados.
+                    - `publicKey.attestation`: modo de atestación ("none" por compatibilidad con dispositivos móviles).
+                    - `publicKey.extensions.credProps`: solicita al autenticador que reporte si la clave es residente (passkey).
+                    """
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Challenge WebAuthn de registro generado exitosamente.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "Respuesta exitosa",
+                            value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "publicKey": {
+                                          "rp": {
+                                            "name": "ViviaAplication",
+                                            "id": "vivia-api.aleosh.online"
+                                          },
+                                          "user": {
+                                            "name": "luis@gmail.com",
+                                            "displayName": "Luis Guzmán",
+                                            "id": "ZjA4YTMxZjMtZjUzMC00NmRjLWI5MDQtNTEyN2JiMmZjNGIy"
+                                          },
+                                          "challenge": "y6c8iTMikxA_RpMmjNPxZMg4ag4dLM_Xda7AfXjJNNs",
+                                          "pubKeyCredParams": [
+                                            { "alg": -7,   "type": "public-key" },
+                                            { "alg": -8,   "type": "public-key" },
+                                            { "alg": -35,  "type": "public-key" },
+                                            { "alg": -36,  "type": "public-key" },
+                                            { "alg": -257, "type": "public-key" },
+                                            { "alg": -258, "type": "public-key" },
+                                            { "alg": -259, "type": "public-key" }
+                                          ],
+                                          "excludeCredentials": [],
+                                          "attestation": "none",
+                                          "extensions": {
+                                            "credProps": true
+                                          }
+                                        }
+                                      },
+                                      "message": "Challenge de registro biométrico generado",
+                                      "status": "OK"
+                                    }
+                                    """
+                    )
+            )
     )
     @PostMapping(value = "/biometric/challenge", consumes = "application/json", produces = "application/json")
     public ResponseEntity<BaseResponse<String>> startBiometricRegistration(

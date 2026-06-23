@@ -44,6 +44,8 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // Webhooks internos: autenticados por firma del servicio externo, no por JWT
+                        .requestMatchers("/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // Eliminada la línea problemática: .authenticationProvider(...)
