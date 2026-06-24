@@ -56,6 +56,8 @@ jobs:
             echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
             echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
             echo "AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }}" >> .env
+            echo "AWS_SNS_REKOGNITION_ROLE_ARN=${{ secrets.AWS_SNS_REKOGNITION_ROLE_ARN }}" >> .env
+            echo "AWS_REKOGNITION_SNS_TOPIC_ARN=${{ secrets.AWS_REKOGNITION_SNS_TOPIC_ARN }}" >> .env
             
             # Detener contenedores previos si existen y reconstruir sin caché
             docker compose down --remove-orphans

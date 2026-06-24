@@ -109,7 +109,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
         }
 
         for (PropertyDraftMedia media : draft.getMediaFiles().values()) {
-            String url = buildPublicUrl(media.getCloudinaryPublicId());
+            String url = buildPublicUrl(media.getStorageKey());
             PropertyMediaEntity.MediaType type = media.getContentType().startsWith("video/")
                     ? PropertyMediaEntity.MediaType.VIDEO
                     : PropertyMediaEntity.MediaType.IMAGE;
