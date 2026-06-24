@@ -10,6 +10,9 @@ import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.auth.services.IAuthService;
 import aleosh.online.vivia.features.auth.services.impl.RefreshTokenServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +35,50 @@ public class AuthController {
         this.refreshTokenServiceImpl = refreshTokenServiceImpl;
     }
 
-    @Operation(summary = "Paso 1: Solicitar desafío de login", description = "Devuelve las opciones WebAuthn para solicitar la huella digital al usuario. Requiere el email del usuario.")
+    @Operation(
+            summary = "Paso 1: Solicitar desafío de login",
+            description = """
+                    Devuelve las opciones WebAuthn para solicitar la huella digital al usuario. Requiere el email del usuario.
+
+                    El campo `data` contiene un objeto `PublicKeyCredentialRequestOptions` serializado con la siguiente estructura:
+                    - `publicKey.challenge`: cadena Base64URL única y de un solo uso para prevenir ataques de repetición.
+                    - `publicKey.rpId`: identificador del Relying Party (dominio de la API).
+                    - `publicKey.allowCredentials`: lista de credenciales biométricas registradas por el usuario. Cada elemento incluye `id` (Base64URL) y `type` ("public-key").
+                    - `publicKey.userVerification`: nivel de verificación requerido ("preferred", "required" o "discouraged").
+                    - `publicKey.timeout`: tiempo máximo en milisegundos para completar la autenticación.
+                    """
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Challenge de login WebAuthn generado exitosamente.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "Respuesta exitosa",
+                            value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "publicKey": {
+                                          "challenge": "y6c8iTMikxA_RpMmjNPxZMg4ag4dLM_Xda7AfXjJNNs",
+                                          "rpId": "vivia-api.aleosh.online",
+                                          "allowCredentials": [
+                                            {
+                                              "type": "public-key",
+                                              "id": "Ac7pN9Kf2Lx..."
+                                            }
+                                          ],
+                                          "userVerification": "preferred",
+                                          "timeout": 60000
+                                        }
+                                      },
+                                      "message": "Desafío de login generado correctamente",
+                                      "status": "OK"
+                                    }
+                                    """
+                    )
+            )
+    )
     @PostMapping(value = "/login/challenge", consumes = "application/json", produces = "application/json")
     public ResponseEntity<BaseResponse<String>> startLogin(
             @Valid @RequestBody BiometricLoginChallengeDto dto

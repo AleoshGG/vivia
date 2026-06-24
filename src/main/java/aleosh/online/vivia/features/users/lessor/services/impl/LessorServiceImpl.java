@@ -148,7 +148,7 @@ public class LessorServiceImpl implements ILessorService {
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(request.getEmail(), null, authorities);
 
         String jwt = jwtProvider.generateToken(auth);
-        String refreshToken = refreshTokenServiceImpl.createRefreshToken(request.getEmail(), role).getToken();
+        String refreshToken = refreshTokenServiceImpl.createRefreshToken(request.getEmail(), role);
 
         return new AuthResponseDto(jwt, refreshToken);
     }
@@ -210,7 +210,7 @@ public class LessorServiceImpl implements ILessorService {
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
 
         String jwt = jwtProvider.generateToken(auth);
-        String refreshToken = refreshTokenServiceImpl.createRefreshToken(email, role).getToken();
+        String refreshToken = refreshTokenServiceImpl.createRefreshToken(email, role);
 
         return new AuthResponseDto(jwt, refreshToken);
     }
@@ -339,7 +339,7 @@ public class LessorServiceImpl implements ILessorService {
             String jwt = jwtProvider.generateToken(auth);
             String refreshToken = refreshTokenServiceImpl.createRefreshToken(
                 userData.getEmail(), role
-            ).getToken();
+            );
 
             // Limpiar caché
             registrationCache.remove(challengeId);

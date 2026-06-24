@@ -49,6 +49,9 @@ public class UserEntity {
     @Builder.Default
     private String photoUrl = "No photo";
 
+    @Column(name = "fcm_token", length = 512)
+    private String fcmToken;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

@@ -40,7 +40,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-        </dependencies>
+            </dependencies>
     </dependencyManagement>
 
     <dependencies>
@@ -97,11 +97,10 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- AWS SDK-->
+        <!-- RabbitMQ -->
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3</artifactId>
-            <version>2.20.0</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
         <!-- Spring docs-->

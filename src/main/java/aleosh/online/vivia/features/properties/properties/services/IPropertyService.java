@@ -1,20 +1,15 @@
 package aleosh.online.vivia.features.properties.properties.services;
 
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
-import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
-import org.springframework.data.domain.Page;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface IPropertyService {
-    PropertyResponseDto createProperty(CreatePropertyDto dto, String companyName);
-    PropertyResponseDto uploadImages(UUID propertyId, String companyName, List<MultipartFile> files);
-    List<PropertyResponseDto> getPropertiesByLessorId(UUID lessorId);
-    List<PropertyResponseDto> getPropertiesByLessorCompanyName(String companyName);
-    void deleteProperty(UUID id, String companyName);
-    Page<PropertyResponseDto> getAllProperties(int page, int size);
-    PropertyDetailResponseDto getPropertyById(UUID id);
+    PropertyResponseDto create(CreatePropertyDto request);
+    PropertyResponseDto getById(UUID id);
+    List<PropertyResponseDto> getAll();
+    void deleteById(UUID id);
+    PropertyResponseDto getByLessorId(UUID lessorId);
 }
