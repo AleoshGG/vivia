@@ -36,13 +36,16 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/lessors/register/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/lessees/register/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/lessors/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/lessees/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login/**", "/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/properties").permitAll()
                         .requestMatchers("/.well-known/assetlinks.json").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        // Webhooks internos: autenticados por firma del servicio externo, no por JWT
+                        .requestMatchers("/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // Eliminada la línea problemática: .authenticationProvider(...)

@@ -12,9 +12,6 @@ public class LessorMapper {
 
         LessorResponseDto dto = new LessorResponseDto();
         dto.setId(lessorEntity.getId());
-        dto.setFirstName(lessorEntity.getFirstName());
-        dto.setLastName(lessorEntity.getLastName());
-        dto.setCompanyName(lessorEntity.getCompanyName());
         dto.setPhoneNumber(lessorEntity.getPhoneNumber());
         return dto;
     }

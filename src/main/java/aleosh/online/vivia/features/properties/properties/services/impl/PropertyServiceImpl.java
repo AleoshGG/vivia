@@ -1,215 +1,141 @@
 package aleosh.online.vivia.features.properties.properties.services.impl;
 
-import aleosh.online.vivia.features.properties.address.data.entities.AddressEntity;
+import aleosh.online.vivia.features.address.address.domain.entities.Address;
+import aleosh.online.vivia.features.address.address.domain.repositories.IAddressRepository;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
-import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.request.PropertyMediaDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyEntity;
-import aleosh.online.vivia.features.properties.properties.data.entities.PropertyImageEntity;
-import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyImageRepository;
+import aleosh.online.vivia.features.properties.properties.data.entities.PropertyMediaEntity;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyRepository;
+import aleosh.online.vivia.features.properties.properties.domain.entities.Property;
+import aleosh.online.vivia.features.properties.properties.domain.exceptions.PropertyNotFoundException;
+import aleosh.online.vivia.features.properties.properties.domain.repositories.IPropertyRepository;
 import aleosh.online.vivia.features.properties.properties.services.IPropertyService;
-import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
-import aleosh.online.vivia.features.users.lessor.data.repositories.LessorRepository;
-import aleosh.online.vivia.features.users.lessor.services.IStorageService;
-import aleosh.online.vivia.features.users.lessor.services.mappers.LessorMapper;
-import aleosh.online.vivia.features.users.lessee.data.repositories.LesseeRepository;
-import aleosh.online.vivia.features.notifications.services.INotificationService;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import aleosh.online.vivia.features.properties.properties.services.mappers.PropertyMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class PropertyServiceImpl implements IPropertyService {
 
-    private final PropertyRepository propertyRepository;
-    private final PropertyImageRepository propertyImageRepository;
-    private final LessorRepository lessorRepository;
-    private final IStorageService s3StorageService;
-    private final LesseeRepository lesseeRepository;
-    private final INotificationService notificationService;
-    private final LessorMapper lessorMapper;
+    private final IPropertyRepository propertyRepository;
+    private final IAddressRepository addressRepository;
+    private final PropertyRepository propertyJpaRepository;
+    private final PropertyMapper mapper;
 
-    @Override
-    public List<PropertyResponseDto> getPropertiesByLessorId(UUID lessorId) {
-        List<PropertyEntity> properties = propertyRepository.findByLessor_Id(lessorId);
-        return properties.stream().map(this::mapToResponseDto).collect(Collectors.toList());
-    }
-
-    @Override
-    public List<PropertyResponseDto> getPropertiesByLessorCompanyName(String companyName) {
-        LessorEntity lessor = lessorRepository.findByCompanyName(companyName)
-                .orElseThrow(() -> new IllegalArgumentException("Arrendador no encontrado: " + companyName));
-        return getPropertiesByLessorId(lessor.getId());
+    public PropertyServiceImpl(
+            IPropertyRepository propertyRepository,
+            IAddressRepository addressRepository,
+            PropertyRepository propertyJpaRepository,
+            @Qualifier("propertyServiceMapper") PropertyMapper mapper
+    ) {
+        this.propertyRepository = propertyRepository;
+        this.addressRepository = addressRepository;
+        this.propertyJpaRepository = propertyJpaRepository;
+        this.mapper = mapper;
     }
 
     @Override
     @Transactional
-    public void deleteProperty(UUID id, String companyName) {
-        PropertyEntity property = propertyRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Propiedad no encontrada"));
-        
-        if (!property.getLessor().getCompanyName().equals(companyName)) {
-            throw new IllegalArgumentException("No tienes permisos para eliminar esta propiedad");
-        }
-        
-        propertyRepository.delete(property);
-    }
-
-    @Override
-    public Page<PropertyResponseDto> getAllProperties(int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page, size);
-        Page<PropertyEntity> propertyPage = propertyRepository.findAll(pageRequest);
-        return propertyPage.map(this::mapToResponseDto);
-    }
-
-    @Override
-    public PropertyDetailResponseDto getPropertyById(UUID id) {
-        PropertyEntity property = propertyRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Propiedad no encontrada"));
-        return mapToDetailResponseDto(property);
-    }
-
-    private PropertyResponseDto mapToResponseDto(PropertyEntity property) {
-        List<String> imageUrls = property.getImages().stream()
-                .map(PropertyImageEntity::getUrl)
-                .collect(Collectors.toList());
-
-        aleosh.online.vivia.features.properties.address.data.dtos.AddressDto addressDto = aleosh.online.vivia.features.properties.address.data.dtos.AddressDto.builder()
-                .address(property.getAddress().getAddress())
-                .city(property.getAddress().getCity())
-                .state(property.getAddress().getState())
-                .neighborhood(property.getAddress().getNeighborhood())
+    public PropertyResponseDto create(CreatePropertyDto request) {
+        // 1. Create address first
+        Address address = Address.builder()
+                .id(UUID.randomUUID())
+                .neighborhoodId(request.getNeighborhoodId())
+                .street(request.getStreet())
+                .exteriorNumber(request.getExteriorNumber())
+                .interiorNumber(request.getInteriorNumber())
                 .build();
 
-        return PropertyResponseDto.builder()
-                .id(property.getId())
-                .title(property.getTitle())
-                .description(property.getDescription())
-                .price(property.getPrice())
-                .address(addressDto)
-                .departmentType(property.getDepartmentType())
-                .area(property.getArea())
-                .roomsNumber(property.getRoomsNumber())
-                .bathroomsNumber(property.getBathroomsNumber())
-                .parkingNumber(property.getParkingNumber())
-                .lessorId(property.getLessor().getId())
-                .imageUrls(imageUrls)
-                .build();
-    }
+        Address savedAddress = addressRepository.save(address);
 
-    private PropertyDetailResponseDto mapToDetailResponseDto(PropertyEntity property) {
-        List<String> imageUrls = property.getImages().stream()
-                .map(PropertyImageEntity::getUrl)
-                .collect(Collectors.toList());
-
-        return PropertyDetailResponseDto.builder()
-                .id(property.getId())
-                .title(property.getTitle())
-                .description(property.getDescription())
-                .price(property.getPrice())
-                .departmentType(property.getDepartmentType())
-                .area(property.getArea())
-                .roomsNumber(property.getRoomsNumber())
-                .bathroomsNumber(property.getBathroomsNumber())
-                .parkingNumber(property.getParkingNumber())
-                .lessor(lessorMapper.toLessorResponseDto(property.getLessor()))
-                .imageUrls(imageUrls)
-                .build();
-    }
-
-    @Override
-    @Transactional
-    public PropertyResponseDto createProperty(CreatePropertyDto dto, String companyName) {
-        // 1. Buscar al Lessor en la base de datos
-        LessorEntity lessor = lessorRepository.findByCompanyName(companyName)
-                .orElseThrow(() -> new IllegalArgumentException("Arrendador no encontrado: " + companyName));
-
-        AddressEntity addressEntity = AddressEntity.builder()
-                .address(dto.getAddress().getAddress())
-                .city(dto.getAddress().getCity())
-                .state(dto.getAddress().getState())
-                .neighborhood(dto.getAddress().getNeighborhood())
+        // 2. Create property with the address ID
+        Property property = Property.builder()
+                .id(UUID.randomUUID())
+                .lessorId(request.getLessorId())
+                .propertyTypeId(request.getPropertyTypeId())
+                .addressId(savedAddress.getId())
+                .isAvailableToRent(request.getIsAvailableToRent() != null ? request.getIsAvailableToRent() : false)
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .areaM2(request.getAreaM2())
+                .bedrooms(request.getBedrooms())
+                .bathrooms(request.getBathrooms())
+                .parkingSpaces(request.getParkingSpaces())
+                .constructionYear(request.getConstructionYear())
+                .isCondominium(request.getIsCondominium() != null ? request.getIsCondominium() : false)
+                .listedPrice(request.getListedPrice())
+                .pricePerM2(request.getPricePerM2())
                 .build();
 
-        // 2. Guardar la PropertyEntity vinculada al Lessor
-        PropertyEntity propertyEntity = PropertyEntity.builder()
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .price(dto.getPrice())
-                .address(addressEntity)
-                .departmentType(dto.getDepartmentType())
-                .area(dto.getArea())
-                .roomsNumber(dto.getRoomsNumber())
-                .bathroomsNumber(dto.getBathroomsNumber())
-                .parkingNumber(dto.getParkingNumber())
-                .lessor(lessor)
-                .build();
+        Property savedProperty = propertyRepository.save(property);
 
-        propertyEntity = propertyRepository.save(propertyEntity);
+        // 3. Add media to the property if provided
+        if (request.getMedia() != null && !request.getMedia().isEmpty()) {
+            PropertyEntity propertyEntity = propertyJpaRepository.findById(savedProperty.getId())
+                    .orElseThrow(() -> new PropertyNotFoundException("Property not found after creation"));
 
-        return mapToResponseDto(propertyEntity);
-    }
-
-    @Override
-    @Transactional
-    public PropertyResponseDto uploadImages(UUID propertyId, String companyName, List<MultipartFile> files) {
-        PropertyEntity propertyEntity = propertyRepository.findById(propertyId)
-                .orElseThrow(() -> new IllegalArgumentException("Propiedad no encontrada"));
-
-        if (!propertyEntity.getLessor().getCompanyName().equals(companyName)) {
-            throw new IllegalArgumentException("No tienes permisos para modificar esta propiedad");
-        }
-
-        boolean isFirstTimeImages = propertyEntity.getImages() == null || propertyEntity.getImages().isEmpty();
-        boolean uploadedAny = false;
-
-        // 3. Iterar sobre la lista de archivos, subirlos a S3 uno por uno
-        if (files != null && !files.isEmpty()) {
-            for (MultipartFile file : files) {
-                if (!file.isEmpty()) {
-                    try {
-                        String fileUrl = s3StorageService.uploadFile(file);
-                        
-                        // 4. Guardar las URLs devueltas en la tabla PropertyImageEntity vinculadas a la propiedad
-                        PropertyImageEntity imageEntity = PropertyImageEntity.builder()
-                                .url(fileUrl)
-                                .property(propertyEntity)
-                                .build();
-                        propertyImageRepository.save(imageEntity);
-                        
-                        propertyEntity.addImage(imageEntity);
-                        uploadedAny = true;
-                    } catch (IOException e) {
-                        throw new RuntimeException("Error al subir el archivo a S3", e);
-                    }
-                }
+            List<PropertyMediaEntity> mediaEntities = new ArrayList<>();
+            for (PropertyMediaDto mediaDto : request.getMedia()) {
+                PropertyMediaEntity mediaEntity = PropertyMediaEntity.builder()
+                        .id(UUID.randomUUID())
+                        .property(propertyEntity)
+                        .url(mediaDto.getUrl())
+                        .type(PropertyMediaEntity.MediaType.valueOf(mediaDto.getType().name()))
+                        .classification(mediaDto.getClassification())
+                        .build();
+                mediaEntities.add(mediaEntity);
             }
+
+            propertyEntity.getMedia().addAll(mediaEntities);
+            propertyJpaRepository.save(propertyEntity);
         }
 
-        if (uploadedAny && isFirstTimeImages) {
-            List<String> tokens = lesseeRepository.findByFollowedLessors_Id(propertyEntity.getLessor().getId()).stream()
-                    .map(l -> l.getFcmToken())
-                    .filter(token -> token != null && !token.isEmpty())
-                    .collect(Collectors.toList());
+        // 4. Fetch the complete property with media for the response
+        PropertyEntity completeProperty = propertyJpaRepository.findById(savedProperty.getId())
+                .orElseThrow(() -> new PropertyNotFoundException("Property not found after creation"));
 
-            System.out.println("Tokens encontrados para notificar: " + tokens.size());
+        return mapper.toResponseDtoWithMedia(completeProperty);
+    }
 
-            if (!tokens.isEmpty()) {
-                notificationService.sendPropertyNotification(tokens, propertyEntity.getLessor().getCompanyName(), propertyEntity.getTitle());
-            }
-        }
+    @Override
+    @Transactional(readOnly = true)
+    public PropertyResponseDto getById(UUID id) {
+        PropertyEntity propertyEntity = propertyJpaRepository.findById(id)
+                .orElseThrow(() -> new PropertyNotFoundException("Property not found with id: " + id));
 
-        return mapToResponseDto(propertyEntity);
+        return mapper.toResponseDtoWithMedia(propertyEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PropertyResponseDto> getAll() {
+        List<PropertyEntity> propertyEntities = propertyJpaRepository.findAll();
+
+        return propertyEntities.stream()
+                .map(mapper::toResponseDtoWithMedia)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteById(UUID id) {
+        propertyRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PropertyResponseDto getByLessorId(UUID lessorId) {
+        PropertyEntity propertyEntity = propertyJpaRepository.findByLessorId(lessorId)
+                .orElseThrow(() -> new PropertyNotFoundException("Property not found for lessor id: " + lessorId));
+
+        return mapper.toResponseDtoWithMedia(propertyEntity);
     }
 }

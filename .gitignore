@@ -33,3 +33,10 @@ build/
 .vscode/
 
 .env
+
+data/
+
+#IA
+.claude
+CLAUDE.md
+docs

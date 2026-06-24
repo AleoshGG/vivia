@@ -1,139 +1,169 @@
 package aleosh.online.vivia.features.properties.properties.domain.entities;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import aleosh.online.vivia.features.properties.properties.domain.exceptions.InvalidPropertyException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class Property {
     private final UUID id;
-    private final String address_id;
-    private final String departmentType;
-    private final Double price;
-    private final Double area;
-    private final int roomsNumber;
-    private final int bathroomsNumber;
-    private final int parkingNumber;
+    private final UUID lessorId;
+    private final UUID propertyTypeId;
+    private final UUID addressId;
+    private final boolean isAvailableToRent;
+
     private final String title;
     private final String description;
-    private final UUID lessorId; // Relación con el arrendador en el dominio
-    private final List<PropertyImage> images; // Relación con las imágenes
 
-    // Constructor privado que recibe el Builder
+    private final BigDecimal areaM2;
+    private final Integer bedrooms;
+    private final BigDecimal bathrooms;
+    private final Integer parkingSpaces;
+    private final Integer constructionYear;
+    private final boolean isCondominium;
+
+    private final BigDecimal listedPrice;
+    private final BigDecimal pricePerM2;
+
+    private final LocalDateTime createdAt;
+    private final LocalDateTime updatedAt;
+
     private Property(Builder builder) {
+        validate(builder);
         this.id = builder.id;
-        this.address_id = builder.address_id;
-        this.departmentType = builder.departmentType;
-        this.price = builder.price;
-        this.area = builder.area;
-        this.roomsNumber = builder.roomsNumber;
-        this.bathroomsNumber = builder.bathroomsNumber;
-        this.parkingNumber = builder.parkingNumber;
+        this.lessorId = builder.lessorId;
+        this.propertyTypeId = builder.propertyTypeId;
+        this.addressId = builder.addressId;
+        this.isAvailableToRent = builder.isAvailableToRent;
         this.title = builder.title;
         this.description = builder.description;
-        this.lessorId = builder.lessorId;
-        this.images = builder.images != null ? new ArrayList<>(builder.images) : new ArrayList<>();
+        this.areaM2 = builder.areaM2;
+        this.bedrooms = builder.bedrooms;
+        this.bathrooms = builder.bathrooms;
+        this.parkingSpaces = builder.parkingSpaces;
+        this.constructionYear = builder.constructionYear;
+        this.isCondominium = builder.isCondominium;
+        this.listedPrice = builder.listedPrice;
+        this.pricePerM2 = builder.pricePerM2;
+        this.createdAt = builder.createdAt;
+        this.updatedAt = builder.updatedAt;
     }
 
-    // --- Getters ---
+    private void validate(Builder builder) {
+        if (builder.id == null) {
+            throw new InvalidPropertyException("Property ID is required");
+        }
+
+        if (builder.lessorId == null) {
+            throw new InvalidPropertyException("Lessor ID is required");
+        }
+
+        if (builder.propertyTypeId == null) {
+            throw new InvalidPropertyException("Property type ID is required");
+        }
+
+        if (builder.addressId == null) {
+            throw new InvalidPropertyException("Address ID is required");
+        }
+
+        if (builder.title == null || builder.title.trim().isEmpty()) {
+            throw new InvalidPropertyException("Title is required");
+        }
+
+        if (builder.title.length() > 200) {
+            throw new InvalidPropertyException("Title must not exceed 200 characters");
+        }
+
+        if (builder.description == null || builder.description.trim().isEmpty()) {
+            throw new InvalidPropertyException("Description is required");
+        }
+
+        if (builder.areaM2 == null || builder.areaM2.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidPropertyException("Area must be greater than 0");
+        }
+
+        if (builder.bedrooms == null || builder.bedrooms < 0) {
+            throw new InvalidPropertyException("Bedrooms must be 0 or greater");
+        }
+
+        if (builder.bathrooms == null || builder.bathrooms.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidPropertyException("Bathrooms must be greater than 0");
+        }
+
+        if (builder.listedPrice == null || builder.listedPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidPropertyException("Listed price must be greater than 0");
+        }
+
+        if (builder.pricePerM2 == null || builder.pricePerM2.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidPropertyException("Price per m2 must be greater than 0");
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    // Getters
     public UUID getId() { return id; }
-    public String getAddress_id() { return address_id; }
-    public String getDepartmentType() { return departmentType; }
-    public Double getPrice() { return price; }
-    public Double getArea() { return area; }
-    public int getRoomsNumber() { return roomsNumber; }
-    public int getBathroomsNumber() { return bathroomsNumber; }
-    public int getParkingNumber() { return parkingNumber; }
+    public UUID getLessorId() { return lessorId; }
+    public UUID getPropertyTypeId() { return propertyTypeId; }
+    public UUID getAddressId() { return addressId; }
+    public boolean isAvailableToRent() { return isAvailableToRent; }
     public String getTitle() { return title; }
     public String getDescription() { return description; }
-    public UUID getLessorId() { return lessorId; }
-    public List<PropertyImage> getImages() { return Collections.unmodifiableList(images); }
+    public BigDecimal getAreaM2() { return areaM2; }
+    public Integer getBedrooms() { return bedrooms; }
+    public BigDecimal getBathrooms() { return bathrooms; }
+    public Integer getParkingSpaces() { return parkingSpaces; }
+    public Integer getConstructionYear() { return constructionYear; }
+    public boolean isCondominium() { return isCondominium; }
+    public BigDecimal getListedPrice() { return listedPrice; }
+    public BigDecimal getPricePerM2() { return pricePerM2; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 
-    // --- Clase Builder Estática ---
     public static class Builder {
         private UUID id;
-        private String address_id;
-        private String departmentType;
-        private Double price;
-        private Double area;
-        private int roomsNumber;
-        private int bathroomsNumber;
-        private int parkingNumber;
+        private UUID lessorId;
+        private UUID propertyTypeId;
+        private UUID addressId;
+        private boolean isAvailableToRent = false;
+
         private String title;
         private String description;
-        private UUID lessorId;
-        private List<PropertyImage> images = new ArrayList<>();
 
-        // Métodos del builder que retornan 'this' para el encadenamiento
-        public Builder id(UUID id) {
-            this.id = id;
-            return this;
-        }
+        private BigDecimal areaM2;
+        private Integer bedrooms;
+        private BigDecimal bathrooms;
+        private Integer parkingSpaces;
+        private Integer constructionYear;
+        private boolean isCondominium = false;
 
-        public Builder address_id(String address_id) {
-            this.address_id = address_id;
-            return this;
-        }
+        private BigDecimal listedPrice;
+        private BigDecimal pricePerM2;
 
-        public Builder departmentType(String departmentType) {
-            this.departmentType = departmentType;
-            return this;
-        }
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
 
-        public Builder price(Double price) {
-            this.price = price;
-            return this;
-        }
+        public Builder id(UUID id) { this.id = id; return this; }
+        public Builder lessorId(UUID lessorId) { this.lessorId = lessorId; return this; }
+        public Builder propertyTypeId(UUID propertyTypeId) { this.propertyTypeId = propertyTypeId; return this; }
+        public Builder addressId(UUID addressId) { this.addressId = addressId; return this; }
+        public Builder isAvailableToRent(boolean isAvailableToRent) { this.isAvailableToRent = isAvailableToRent; return this; }
+        public Builder title(String title) { this.title = title; return this; }
+        public Builder description(String description) { this.description = description; return this; }
+        public Builder areaM2(BigDecimal areaM2) { this.areaM2 = areaM2; return this; }
+        public Builder bedrooms(Integer bedrooms) { this.bedrooms = bedrooms; return this; }
+        public Builder bathrooms(BigDecimal bathrooms) { this.bathrooms = bathrooms; return this; }
+        public Builder parkingSpaces(Integer parkingSpaces) { this.parkingSpaces = parkingSpaces; return this; }
+        public Builder constructionYear(Integer constructionYear) { this.constructionYear = constructionYear; return this; }
+        public Builder isCondominium(boolean isCondominium) { this.isCondominium = isCondominium; return this; }
+        public Builder listedPrice(BigDecimal listedPrice) { this.listedPrice = listedPrice; return this; }
+        public Builder pricePerM2(BigDecimal pricePerM2) { this.pricePerM2 = pricePerM2; return this; }
+        public Builder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
+        public Builder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
-        public Builder area(Double area) {
-            this.area = area;
-            return this;
-        }
-
-        public Builder roomsNumber(int roomsNumber) {
-            this.roomsNumber = roomsNumber;
-            return this;
-        }
-
-        public Builder bathroomsNumber(int bathroomsNumber) {
-            this.bathroomsNumber = bathroomsNumber;
-            return this;
-        }
-
-        public Builder parkingNumber(int parkingNumber) {
-            this.parkingNumber = parkingNumber;
-            return this;
-        }
-
-        public Builder title(String title) {
-            this.title = title;
-            return this;
-        }
-
-        public Builder description(String description) {
-            this.description = description;
-            return this;
-        }
-
-        public Builder lessorId(UUID lessorId) {
-            this.lessorId = lessorId;
-            return this;
-        }
-
-        public Builder addImage(PropertyImage image) {
-            this.images.add(image);
-            return this;
-        }
-
-        public Builder images(List<PropertyImage> images) {
-            this.images = images;
-            return this;
-        }
-
-        // Método final que construye y retorna la entidad
         public Property build() {
-            // Aquí puedes agregar validaciones de dominio (ej. requireNonNull)
-            // antes de instanciar el objeto.
             return new Property(this);
         }
     }

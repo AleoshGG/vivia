@@ -1,16 +1,23 @@
 package aleosh.online.vivia.features.users.lessor.controllers;
 
 import aleosh.online.vivia.core.dtos.BaseResponse;
-import aleosh.online.vivia.features.users.lessor.data.dtos.request.CreateLessorDto;
-import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerifyLessorRegistrationDto;
+import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
+//import aleosh.online.vivia.features.users.lessor.data.dtos.request.CreateLessorDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorBiometricChallengeDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorBiometricVerifyDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorGoogleDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
+//import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerifyLessorRegistrationDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
 import aleosh.online.vivia.features.users.lessor.services.ILessorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,91 +41,119 @@ public class LessorController {
         this.lessorService = lessorService;
     }
 
-    @Operation(summary = "Paso 1: Solicitar desafío de registro",
-            description = "Inicia el registro del arrendador y devuelve un JSON con el desafío (Challenge) para crear la Passkey.")
-    @PostMapping(value = "/register/challenge", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<BaseResponse<String>> startRegistration(
-            @RequestBody CreateLessorDto createLessorDto
+    @Operation(summary = "Registro con Contraseña",
+            description = "Registra un nuevo arrendador utilizando correo y contraseña. Devuelve los tokens de sesión inmediatamente.")
+    @PostMapping(value = "/password", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> registerWithPassword(
+            @Valid @RequestBody RegisterLessorPasswordDto requestDto
     ) {
-        // Retorna un JSON String directamente con los datos criptográficos requeridos por el celular
-        String webAuthnOptionsJson = lessorService.startRegistration(createLessorDto);
+        AuthResponseDto authResponseDto = lessorService.registerWithPassword(requestDto);
 
         return new BaseResponse<>(
-                true, webAuthnOptionsJson, "Desafío generado correctamente", HttpStatus.OK
+                true, authResponseDto, "Arrendador registrado y logueado exitosamente", HttpStatus.CREATED
         ).buildResponseEntity();
     }
 
-    @Operation(summary = "Paso 2: Verificar credencial y guardar arrendador",
-            description = "Recibe la firma biométrica del dispositivo, la verifica y, si es válida, persiste el usuario en base de datos.")
-    @PostMapping(value = "/register/verify", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<BaseResponse<LessorResponseDto>> finishRegistration(
-            @RequestBody VerifyLessorRegistrationDto verifyLessorRegistrationDto
+    @Operation(
+            summary = "Registro con cuenta Google",
+            description = "Registra un nuevo arrendador utilizando su cuenta vinculada a Google. Devuelve los tokens de sesión inmediatamente."
+    )
+    @PostMapping(value = "/google", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> registerWithGoogle(
+            @Valid @RequestBody RegisterLessorGoogleDto requestDto
     ) {
-        LessorResponseDto lessorResponseDto = lessorService.finishRegistration(verifyLessorRegistrationDto);
+        AuthResponseDto authResponseDto = lessorService.registerWithGoogleAccount(requestDto);
 
         return new BaseResponse<>(
-                true, lessorResponseDto, "Arrendador registrado exitosamente", HttpStatus.CREATED
+                true, authResponseDto, "Arrendador registrado y logueado exitosamente", HttpStatus.CREATED
         ).buildResponseEntity();
     }
 
-    @Operation(summary = "Obtener todos los arrendadores", description = "Devuelve una lista con todos los arrendadores registrados.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente")
-    })
-    @GetMapping(produces = "application/json")
-    public ResponseEntity<BaseResponse<List<LessorResponseDto>>> getAllLessors() {
-        List<LessorResponseDto> lessors = lessorService.getAllLessors();
+    @Operation(
+            summary = "Paso 1: Solicitar desafío de registro biométrico",
+            description = """
+                    Genera un challenge WebAuthn para iniciar el registro de credencial biométrica (huella digital).
 
-        return new BaseResponse<>(
-                true, lessors, "Arrendadores obtenidos correctamente", HttpStatus.OK
-        ).buildResponseEntity();
-    }
-
-    @Operation(summary = "Obtener mi perfil", description = "Devuelve los datos del arrendador autenticado usando el token de sesión.")
-    @PreAuthorize("hasRole('LESSOR')") // <-- PROTECCIÓN DE ROL
-    @GetMapping(value = "/me", produces = "application/json")
-    public ResponseEntity<BaseResponse<LessorResponseDto>> getMyProfile() {
-        // Extraemos el identificador (que sabemos que es el COMPANY NAME gracias a nuestro UserDetailsService)
-        String currentCompanyName = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        // CORRECCIÓN SEMÁNTICA: Usamos getLessorByCompanyName
-        LessorResponseDto user = lessorService.getLessorByCompanyName(currentCompanyName);
-
-        return new BaseResponse<>(
-                true, user, "Perfil obtenido correctamente", HttpStatus.OK
-        ).buildResponseEntity();
-    }
-
-    @Operation(summary = "Buscar arrendador por nombre de empresa", description = "Busca y devuelve los datos de un arrendador específico mediante el nombre de su empresa.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Arrendador encontrado"),
-            @ApiResponse(responseCode = "404", description = "Arrendador no encontrado", content = @Content)
-    })
-    @GetMapping(value = "/company/{companyName}", produces = "application/json")
-    public ResponseEntity<BaseResponse<LessorResponseDto>> getLessorByCompanyName(
-            @Parameter(description = "Nombre de la empresa del arrendador", required = true)
-            @PathVariable String companyName
+                    El campo `data` contiene un objeto `PublicKeyCredentialCreationOptions` serializado con la siguiente estructura:
+                    - `publicKey.rp`: información del Relying Party (nombre e identificador de dominio de la API).
+                    - `publicKey.user.name`: correo electrónico del usuario.
+                    - `publicKey.user.displayName`: nombre completo del usuario.
+                    - `publicKey.user.id`: identificador único del usuario codificado en Base64URL.
+                    - `publicKey.challenge`: cadena Base64URL única y de un solo uso para prevenir ataques de repetición.
+                    - `publicKey.pubKeyCredParams`: lista de algoritmos criptográficos aceptados (ej. ES256 = -7, RS256 = -257).
+                    - `publicKey.excludeCredentials`: lista de credenciales ya registradas para evitar duplicados.
+                    - `publicKey.attestation`: modo de atestación ("none" por compatibilidad con dispositivos móviles).
+                    - `publicKey.extensions.credProps`: solicita al autenticador que reporte si la clave es residente (passkey).
+                    """
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Challenge WebAuthn de registro generado exitosamente.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "Respuesta exitosa",
+                            value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "publicKey": {
+                                          "rp": {
+                                            "name": "ViviaAplication",
+                                            "id": "vivia-api.aleosh.online"
+                                          },
+                                          "user": {
+                                            "name": "luis@gmail.com",
+                                            "displayName": "Luis Guzmán",
+                                            "id": "ZjA4YTMxZjMtZjUzMC00NmRjLWI5MDQtNTEyN2JiMmZjNGIy"
+                                          },
+                                          "challenge": "y6c8iTMikxA_RpMmjNPxZMg4ag4dLM_Xda7AfXjJNNs",
+                                          "pubKeyCredParams": [
+                                            { "alg": -7,   "type": "public-key" },
+                                            { "alg": -8,   "type": "public-key" },
+                                            { "alg": -35,  "type": "public-key" },
+                                            { "alg": -36,  "type": "public-key" },
+                                            { "alg": -257, "type": "public-key" },
+                                            { "alg": -258, "type": "public-key" },
+                                            { "alg": -259, "type": "public-key" }
+                                          ],
+                                          "excludeCredentials": [],
+                                          "attestation": "none",
+                                          "extensions": {
+                                            "credProps": true
+                                          }
+                                        }
+                                      },
+                                      "message": "Challenge de registro biométrico generado",
+                                      "status": "OK"
+                                    }
+                                    """
+                    )
+            )
+    )
+    @PostMapping(value = "/biometric/challenge", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<String>> startBiometricRegistration(
+            @Valid @RequestBody RegisterLessorBiometricChallengeDto requestDto
     ) {
-        LessorResponseDto lessor = lessorService.getLessorByCompanyName(companyName);
+        String challengeJson = lessorService.startBiometricRegistration(requestDto);
 
         return new BaseResponse<>(
-                true, lessor, "Arrendador obtenido correctamente", HttpStatus.OK
+                true, challengeJson, "Challenge de registro biométrico generado", HttpStatus.OK
         ).buildResponseEntity();
     }
 
-    @Operation(summary = "Obtener seguidores", description = "Devuelve una lista con todos los arrendatarios que siguen al arrendador autenticado.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente")
-    })
-    @PreAuthorize("hasRole('LESSOR')")
-    @GetMapping(value = "/followers", produces = "application/json")
-    public ResponseEntity<BaseResponse<List<LesseeResponseDto>>> getFollowers() {
-        String currentCompanyName = SecurityContextHolder.getContext().getAuthentication().getName();
-        List<LesseeResponseDto> followers = lessorService.getFollowers(currentCompanyName);
+    @Operation(
+            summary = "Paso 2: Verificar credencial biométrica y registrar",
+            description = "Verifica la credencial biométrica capturada, crea el usuario y devuelve los tokens de sesión."
+    )
+    @PostMapping(value = "/biometric/verify", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> finishBiometricRegistration(
+            @Valid @RequestBody RegisterLessorBiometricVerifyDto requestDto
+    ) {
+        AuthResponseDto authResponseDto = lessorService.finishBiometricRegistration(requestDto);
 
         return new BaseResponse<>(
-                true, followers, "Seguidores obtenidos correctamente", HttpStatus.OK
+                true, authResponseDto, "Arrendador registrado y logueado exitosamente", HttpStatus.CREATED
         ).buildResponseEntity();
     }
-
 }

@@ -1,21 +1,15 @@
 package aleosh.online.vivia.features.users.lessor.services;
 
-import aleosh.online.vivia.features.users.lessor.data.dtos.request.CreateLessorDto;
-import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerifyLessorRegistrationDto;
-import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
-import java.util.List;
-
-import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeResponseDto;
+import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorBiometricChallengeDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorBiometricVerifyDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorGoogleDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
 
 public interface ILessorService {
-    // Paso 1: Inicia el registro y devuelve las opciones WebAuthn (Challenge) en formato JSON
-    String startRegistration(CreateLessorDto createLessorDto);
+    AuthResponseDto registerWithPassword(RegisterLessorPasswordDto request);
+    AuthResponseDto registerWithGoogleAccount(RegisterLessorGoogleDto request);
 
-    // Paso 2: Verifica la firma criptográfica y guarda el Lessor en la base de datos
-    LessorResponseDto finishRegistration(VerifyLessorRegistrationDto verifyDto);
-
-    LessorResponseDto getLessorByCompanyName(String companyName);
-    LessorResponseDto getLessorByUsername(String username);
-    List<LessorResponseDto> getAllLessors();
-    List<LesseeResponseDto> getFollowers(String companyName);
+    String startBiometricRegistration(RegisterLessorBiometricChallengeDto dto);
+    AuthResponseDto finishBiometricRegistration(RegisterLessorBiometricVerifyDto dto);
 }
