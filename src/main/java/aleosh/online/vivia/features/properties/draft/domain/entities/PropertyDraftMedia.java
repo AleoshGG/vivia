@@ -13,6 +13,7 @@ public class PropertyDraftMedia {
     private final String contentType;
     private final String cloudinaryPublicId;
     private final String status;
+    private final String classification;
 
     @JsonCreator
     public PropertyDraftMedia(
@@ -21,7 +22,8 @@ public class PropertyDraftMedia {
             @JsonProperty("fileKey") String fileKey,
             @JsonProperty("contentType") String contentType,
             @JsonProperty("cloudinaryPublicId") String cloudinaryPublicId,
-            @JsonProperty("status") String status
+            @JsonProperty("status") String status,
+            @JsonProperty("classification") String classification
     ) {
         this.id = id;
         this.draftId = draftId;
@@ -29,6 +31,7 @@ public class PropertyDraftMedia {
         this.contentType = contentType;
         this.cloudinaryPublicId = cloudinaryPublicId;
         this.status = status;
+        this.classification = classification;
     }
 
     public UUID getId() { return id; }
@@ -37,4 +40,5 @@ public class PropertyDraftMedia {
     public String getContentType() { return contentType; }
     public String getCloudinaryPublicId() { return cloudinaryPublicId; }
     public String getStatus() { return status; }
+    public String getClassification() { return classification; }
 }

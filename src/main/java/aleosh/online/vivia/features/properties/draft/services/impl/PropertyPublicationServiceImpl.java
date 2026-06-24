@@ -116,6 +116,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
                     .property(property)
                     .url(url)
                     .type(type)
+                    .classification(media.getClassification())
                     .build());
         }
         return entities;

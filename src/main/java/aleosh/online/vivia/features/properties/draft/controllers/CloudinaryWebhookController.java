@@ -4,6 +4,9 @@ import aleosh.online.vivia.features.properties.draft.data.dtos.request.Cloudinar
 import aleosh.online.vivia.features.properties.draft.messaging.events.MediaUploadedEvent;
 import aleosh.online.vivia.features.properties.draft.messaging.publishers.MediaUploadEventPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -14,6 +17,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/internal")
+@Tag(name = "Webhooks internos — Cloudinary", description = "Endpoint exclusivo para Cloudinary. Notifica a Vivia cuando el cliente móvil termina de subir un archivo con upload firmado. No debe ser llamado por clientes móviles ni por otros servicios.")
 public class CloudinaryWebhookController {
 
     private static final Logger log = LoggerFactory.getLogger(CloudinaryWebhookController.class);
@@ -32,7 +36,15 @@ public class CloudinaryWebhookController {
         this.objectMapper = objectMapper;
     }
 
-    @PostMapping("/media/uploaded")
+    @Operation(
+            summary = "Notificación de upload completado (Cloudinary → Vivia)",
+            description = "Cloudinary llama a este endpoint cuando el cliente sube un archivo con upload firmado. Valida la firma del webhook (SHA1 de rawBody + X-Cld-Timestamp + cloudinary.api-secret), parsea el public_id con formato 'drafts/{draftId}/{fileKey}' y publica un MediaUploadedEvent en la cola 'vivia.media.file.uploaded'. Cuando todos los archivos del draft están subidos, el consumer avanza el status a CONTENT_VALIDATION_PENDING. Solo se procesan notificaciones con notification_type='upload'; cualquier otro tipo se ignora con 200."
+    )
+    @ApiResponse(responseCode = "200", description = "Evento procesado y publicado en RabbitMQ.")
+    @ApiResponse(responseCode = "400", description = "El public_id no tiene el formato esperado 'drafts/{draftId}/{fileKey}'.")
+    @ApiResponse(responseCode = "401", description = "Firma inválida o ausente. Headers X-Cld-Signature o X-Cld-Timestamp faltantes o incorrectos.")
+    @ApiResponse(responseCode = "500", description = "Error interno al procesar el payload o publicar el evento.")
+    @PostMapping(value = "/media/uploaded", consumes = "application/json")
     public ResponseEntity<Void> handleUpload(
             @RequestBody String rawBody,
             @RequestHeader(value = "X-Cld-Signature", required = false) String signature,

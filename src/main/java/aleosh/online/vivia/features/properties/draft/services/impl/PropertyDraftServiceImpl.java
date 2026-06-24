@@ -127,7 +127,8 @@ public class PropertyDraftServiceImpl implements IPropertyDraftService {
                     item.getFileKey(),
                     item.getContentType(),
                     publicId,
-                    "PENDING"
+                    "PENDING",
+                    item.getClassification()
             );
             mediaFiles.put(item.getFileKey(), media);
             log.debug("[PIPELINE] Media registrada: fileKey={}, publicId={}, contentType={}",
