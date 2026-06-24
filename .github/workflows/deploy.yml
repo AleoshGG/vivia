@@ -39,10 +39,15 @@ jobs:
             echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
             echo "RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}" >> .env
             echo "RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}" >> .env
-            echo "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}" >> .env
-            echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}" >> .env
-            echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }}" >> .env
+            echo "JWT_REFRESH_EXPIRATION=${{ secrets.JWT_REFRESH_EXPIRATION }}" >> .env
             echo "INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }}" >> .env
+            echo "FIREBASE_KEY_PATH=${{ secrets.FIREBASE_KEY_PATH }}" >> .env
+            echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+            echo "AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }}" >> .env
             
             # Detener contenedores previos si existen y reconstruir
             docker compose down --remove-orphans
