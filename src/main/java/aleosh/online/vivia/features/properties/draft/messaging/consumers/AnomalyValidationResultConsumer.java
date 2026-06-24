@@ -7,6 +7,7 @@ import aleosh.online.vivia.features.properties.draft.messaging.events.AnomalyVal
 import aleosh.online.vivia.features.properties.draft.messaging.events.NotificationEvent;
 import aleosh.online.vivia.features.properties.draft.messaging.publishers.NotificationPublisher;
 import aleosh.online.vivia.features.properties.draft.services.IAnalysisStorageService;
+import aleosh.online.vivia.features.properties.draft.services.IMediaStorageService;
 import aleosh.online.vivia.features.properties.draft.services.IPropertyPublicationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,17 +25,20 @@ public class AnomalyValidationResultConsumer {
     private final IPropertyDraftRepository draftRepository;
     private final IPropertyPublicationService propertyPublicationService;
     private final IAnalysisStorageService analysisStorageService;
+    private final IMediaStorageService mediaStorageService;
     private final NotificationPublisher notificationPublisher;
 
     public AnomalyValidationResultConsumer(
             IPropertyDraftRepository draftRepository,
             IPropertyPublicationService propertyPublicationService,
             IAnalysisStorageService analysisStorageService,
+            IMediaStorageService mediaStorageService,
             NotificationPublisher notificationPublisher
     ) {
         this.draftRepository = draftRepository;
         this.propertyPublicationService = propertyPublicationService;
         this.analysisStorageService = analysisStorageService;
+        this.mediaStorageService = mediaStorageService;
         this.notificationPublisher = notificationPublisher;
     }
 
@@ -63,8 +67,10 @@ public class AnomalyValidationResultConsumer {
 
         draftRepository.updateStatus(draft.getId(), "ANOMALY_REJECTED");
 
-        // Guardar en Firestore ANTES de eliminar de Redis (conservar datos para análisis)
+        // Guardar en Firestore ANTES de eliminar (conservar datos para análisis)
         analysisStorageService.saveRejectedDraft(draft, reason);
+
+        mediaStorageService.deleteByDraftId(draft.getId());
 
         notificationPublisher.publish(new NotificationEvent(
                 draft.getLessorId(),
@@ -81,9 +87,10 @@ public class AnomalyValidationResultConsumer {
     }
 
     private void handleApproval(PropertyDraft draft) {
-        log.info("Propiedad {} aprobada. Publicando en PostgreSQL.", draft.getId());
+        log.info("Propiedad {} aprobada. Moviendo media a public y publicando en PostgreSQL.", draft.getId());
 
-        // Escribir en PostgreSQL dentro de una transacción
+        mediaStorageService.moveStagingToPublic(draft.getId());
+
         propertyPublicationService.publish(draft);
 
         draftRepository.updateStatus(draft.getId(), "PUBLISHED");

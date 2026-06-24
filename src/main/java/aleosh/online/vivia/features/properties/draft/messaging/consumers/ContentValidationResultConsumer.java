@@ -8,7 +8,7 @@ import aleosh.online.vivia.features.properties.draft.messaging.events.ContentVal
 import aleosh.online.vivia.features.properties.draft.messaging.events.NotificationEvent;
 import aleosh.online.vivia.features.properties.draft.messaging.publishers.AnomalyValidationPublisher;
 import aleosh.online.vivia.features.properties.draft.messaging.publishers.NotificationPublisher;
-import aleosh.online.vivia.features.properties.draft.services.ICloudinaryAdminService;
+import aleosh.online.vivia.features.properties.draft.services.IMediaStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -23,18 +23,18 @@ public class ContentValidationResultConsumer {
     private static final Logger log = LoggerFactory.getLogger(ContentValidationResultConsumer.class);
 
     private final IPropertyDraftRepository draftRepository;
-    private final ICloudinaryAdminService cloudinaryAdminService;
+    private final IMediaStorageService mediaStorageService;
     private final AnomalyValidationPublisher anomalyValidationPublisher;
     private final NotificationPublisher notificationPublisher;
 
     public ContentValidationResultConsumer(
             IPropertyDraftRepository draftRepository,
-            ICloudinaryAdminService cloudinaryAdminService,
+            IMediaStorageService mediaStorageService,
             AnomalyValidationPublisher anomalyValidationPublisher,
             NotificationPublisher notificationPublisher
     ) {
         this.draftRepository = draftRepository;
-        this.cloudinaryAdminService = cloudinaryAdminService;
+        this.mediaStorageService = mediaStorageService;
         this.anomalyValidationPublisher = anomalyValidationPublisher;
         this.notificationPublisher = notificationPublisher;
     }
@@ -75,8 +75,7 @@ public class ContentValidationResultConsumer {
                 )
         ));
 
-        // Best-effort: eliminar archivos de Cloudinary
-        cloudinaryAdminService.deleteByDraftId(draft.getId());
+        mediaStorageService.deleteByDraftId(draft.getId());
 
         draftRepository.deleteById(draft.getId());
     }

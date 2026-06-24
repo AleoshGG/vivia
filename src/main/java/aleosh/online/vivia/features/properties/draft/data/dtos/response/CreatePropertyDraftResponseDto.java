@@ -1,5 +1,6 @@
 package aleosh.online.vivia.features.properties.draft.data.dtos.response;
 
+import aleosh.online.vivia.features.properties.draft.data.dtos.response.MediaUploadUrlDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,5 +16,5 @@ public class CreatePropertyDraftResponseDto {
     private UUID draftId;
     private String status;
     private String expiresAt;
-    private List<CloudinaryUploadParamsDto> uploads;
+    private List<MediaUploadUrlDto> uploads;
 }

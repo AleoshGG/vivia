@@ -14,13 +14,6 @@ public class ContentValidationSubmitConsumer {
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_CONTENT_VALIDATION_SUBMIT)
     public void handle(ContentValidationSubmitEvent event) {
-        log.info("[PIPELINE] [DEBUG] ContentValidationSubmitConsumer recibió evento para draftId={}",
-                event.getDraft().getId());
-        log.info("[PIPELINE] [DEBUG] *** SIMULANDO invocación al servicio de moderación de contenido ***");
-        log.info("[PIPELINE] [DEBUG] Draft title='{}', lessorId={}, totalFiles={}",
-                event.getDraft().getTitle(),
-                event.getDraft().getLessorId(),
-                event.getDraft().getTotalFiles());
-        log.info("[PIPELINE] [DEBUG] Para completar el pipeline, el servicio de moderación debe llamar a: POST /internal/validations/content/result");
+        log.info("Draft {} enviado a validación de contenido.", event.getDraft().getId());
     }
 }
