@@ -31,40 +31,26 @@ public class MediaUploadConsumer {
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_MEDIA_UPLOADED)
     public void handle(MediaUploadedEvent event) {
-        log.info("[PIPELINE] [CONSUMER] MediaUploadedEvent recibido: draftId={}, fileKey={}, success={}",
-                event.getDraftId(), event.getFileKey(), event.isSuccess());
-
         Optional<PropertyDraft> draftOpt = draftRepository.getById(event.getDraftId());
         if (draftOpt.isEmpty()) {
-            log.warn("[PIPELINE] [CONSUMER] Draft {} no encontrado en Redis (TTL expirado o inválido) — ignorando evento.",
-                    event.getDraftId());
+            log.warn("Draft {} no encontrado en Redis — ignorando MediaUploadedEvent.", event.getDraftId());
             return;
         }
 
         PropertyDraft draft = draftOpt.get();
-        log.info("[PIPELINE] [CONSUMER] Draft encontrado en Redis: draftId={}, totalFiles={}, status={}",
-                draft.getId(), draft.getTotalFiles(), draft.getStatus());
 
         if (!event.isSuccess()) {
-            log.warn("[PIPELINE] [CONSUMER] Upload fallido para draftId={}, fileKey={}. Marcando como MEDIA_UPLOAD_FAILED y eliminando draft.",
-                    event.getDraftId(), event.getFileKey());
+            log.warn("Upload fallido para draftId={}, fileKey={}.", event.getDraftId(), event.getFileKey());
             draftRepository.updateStatus(event.getDraftId(), "MEDIA_UPLOAD_FAILED");
             draftRepository.deleteById(event.getDraftId());
             return;
         }
 
         int uploadedFiles = draftRepository.incrementUploadedFiles(event.getDraftId());
-        log.info("[PIPELINE] [CONSUMER] Progreso de uploads: {}/{} para draftId={}",
-                uploadedFiles, draft.getTotalFiles(), event.getDraftId());
 
         if (uploadedFiles >= draft.getTotalFiles()) {
-            log.info("[PIPELINE] [CONSUMER] *** TODOS LOS ARCHIVOS SUBIDOS *** draftId={}. Actualizando status a CONTENT_VALIDATION_PENDING.",
-                    event.getDraftId());
             draftRepository.updateStatus(event.getDraftId(), "CONTENT_VALIDATION_PENDING");
-            log.info("[PIPELINE] [CONSUMER] Publicando ContentValidationSubmitEvent para draftId={}.", event.getDraftId());
             contentValidationPublisher.publish(new ContentValidationSubmitEvent(draft));
-            log.info("[PIPELINE] [CONSUMER] ContentValidationSubmitEvent publicado. Pipeline de media upload COMPLETADO para draftId={}.",
-                    event.getDraftId());
         }
     }
 }

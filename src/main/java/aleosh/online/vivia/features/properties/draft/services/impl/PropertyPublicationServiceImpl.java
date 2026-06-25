@@ -12,8 +12,8 @@ import aleosh.online.vivia.features.properties.properties.data.entities.Property
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyTypeEntity;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyRepository;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyTypeRepository;
-import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import aleosh.online.vivia.features.users.lessor.data.repositories.LessorRepository;
+import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,8 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
     private final PropertyTypeRepository propertyTypeRepository;
     private final NeighborhoodRepository neighborhoodRepository;
     private final LessorRepository lessorRepository;
-    private final String cloudName;
+    private final String bucket;
+    private final String region;
 
     public PropertyPublicationServiceImpl(
             PropertyRepository propertyRepository,
@@ -39,14 +40,16 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
             PropertyTypeRepository propertyTypeRepository,
             NeighborhoodRepository neighborhoodRepository,
             LessorRepository lessorRepository,
-            @Value("${cloudinary.cloud-name}") String cloudName
+            @Value("${aws.s3.bucket}") String bucket,
+            @Value("${aws.region}") String region
     ) {
         this.propertyRepository = propertyRepository;
         this.addressRepository = addressRepository;
         this.propertyTypeRepository = propertyTypeRepository;
         this.neighborhoodRepository = neighborhoodRepository;
         this.lessorRepository = lessorRepository;
-        this.cloudName = cloudName;
+        this.bucket = bucket;
+        this.region = region;
     }
 
     @Override
@@ -106,7 +109,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
         }
 
         for (PropertyDraftMedia media : draft.getMediaFiles().values()) {
-            String url = buildCloudinaryUrl(media.getCloudinaryPublicId(), media.getContentType());
+            String url = buildPublicUrl(media.getStorageKey());
             PropertyMediaEntity.MediaType type = media.getContentType().startsWith("video/")
                     ? PropertyMediaEntity.MediaType.VIDEO
                     : PropertyMediaEntity.MediaType.IMAGE;
@@ -122,9 +125,9 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
         return entities;
     }
 
-    // Cloudinary URL pública: https://res.cloudinary.com/{cloud}/{resourceType}/upload/{publicId}
-    private String buildCloudinaryUrl(String publicId, String contentType) {
-        String resourceType = contentType.startsWith("video/") ? "video" : "image";
-        return String.format("https://res.cloudinary.com/%s/%s/upload/%s", cloudName, resourceType, publicId);
+    // stagingKey: media/staging/<draftId>/<fileKey> → public URL: media/public/<draftId>/<fileKey>
+    private String buildPublicUrl(String stagingKey) {
+        String publicKey = stagingKey.replace("media/staging/", "media/public/");
+        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, publicKey);
     }
 }

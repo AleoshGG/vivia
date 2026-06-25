@@ -4,20 +4,18 @@ import aleosh.online.vivia.features.address.neighborhoods.data.entities.Neighbor
 import aleosh.online.vivia.features.address.neighborhoods.data.repositories.NeighborhoodRepository;
 import aleosh.online.vivia.features.properties.draft.data.dtos.request.CreatePropertyDraftRequestDto;
 import aleosh.online.vivia.features.properties.draft.data.dtos.request.MediaManifestItemDto;
-import aleosh.online.vivia.features.properties.draft.data.dtos.response.CloudinaryUploadParamsDto;
 import aleosh.online.vivia.features.properties.draft.data.dtos.response.CreatePropertyDraftResponseDto;
+import aleosh.online.vivia.features.properties.draft.data.dtos.response.MediaUploadUrlDto;
 import aleosh.online.vivia.features.properties.draft.domain.entities.PropertyDraft;
 import aleosh.online.vivia.features.properties.draft.domain.entities.PropertyDraftMedia;
 import aleosh.online.vivia.features.properties.draft.domain.exceptions.InvalidMediaManifestException;
 import aleosh.online.vivia.features.properties.draft.domain.exceptions.NeighborhoodNotFoundException;
 import aleosh.online.vivia.features.properties.draft.domain.exceptions.PropertyTypeNotFoundException;
 import aleosh.online.vivia.features.properties.draft.domain.repositories.IPropertyDraftRepository;
-import aleosh.online.vivia.features.properties.draft.services.ICloudinaryUploadService;
+import aleosh.online.vivia.features.properties.draft.services.IMediaUploadService;
 import aleosh.online.vivia.features.properties.draft.services.IPropertyDraftService;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyTypeEntity;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyTypeRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -31,10 +29,8 @@ import java.util.stream.Collectors;
 @Service
 public class PropertyDraftServiceImpl implements IPropertyDraftService {
 
-    private static final Logger log = LoggerFactory.getLogger(PropertyDraftServiceImpl.class);
-
     private final IPropertyDraftRepository draftRepository;
-    private final ICloudinaryUploadService cloudinaryUploadService;
+    private final IMediaUploadService mediaUploadService;
     private final PropertyTypeRepository propertyTypeRepository;
     private final NeighborhoodRepository neighborhoodRepository;
 
@@ -64,48 +60,37 @@ public class PropertyDraftServiceImpl implements IPropertyDraftService {
 
     public PropertyDraftServiceImpl(
             IPropertyDraftRepository draftRepository,
-            ICloudinaryUploadService cloudinaryUploadService,
+            IMediaUploadService mediaUploadService,
             PropertyTypeRepository propertyTypeRepository,
             NeighborhoodRepository neighborhoodRepository
     ) {
         this.draftRepository = draftRepository;
-        this.cloudinaryUploadService = cloudinaryUploadService;
+        this.mediaUploadService = mediaUploadService;
         this.propertyTypeRepository = propertyTypeRepository;
         this.neighborhoodRepository = neighborhoodRepository;
     }
 
     @Override
     public CreatePropertyDraftResponseDto createDraft(CreatePropertyDraftRequestDto request, UUID lessorId) {
-        log.info("[PIPELINE] [1/6] Iniciando createDraft: lessorId={}, archivos={}, propertyTypeId={}, neighborhoodId={}",
-                lessorId, request.getMediaManifest().size(), request.getPropertyTypeId(), request.getNeighborhoodId());
-
         validateMediaManifest(request.getMediaManifest());
-        log.info("[PIPELINE] [2/6] Manifest validado: {} imágenes y {} videos",
-                request.getMediaManifest().stream().filter(i -> i.getContentType().startsWith("image/")).count(),
-                request.getMediaManifest().stream().filter(i -> i.getContentType().startsWith("video/")).count());
 
         PropertyTypeEntity propertyType = propertyTypeRepository.findById(request.getPropertyTypeId())
                 .orElseThrow(() -> new PropertyTypeNotFoundException(
                         "Property type not found with ID: " + request.getPropertyTypeId()
                 ));
-        log.info("[PIPELINE] [3/6] PropertyType encontrado: id={}, name={}", propertyType.getId(), propertyType.getName());
 
         NeighborhoodEntity neighborhood = neighborhoodRepository.findById(request.getNeighborhoodId())
                 .orElseThrow(() -> new NeighborhoodNotFoundException(
                         "Neighborhood not found with ID: " + request.getNeighborhoodId()
                 ));
-        log.info("[PIPELINE] [3/6] Neighborhood encontrado: id={}, name={}", neighborhood.getId(), neighborhood.getName());
 
         BigDecimal pricePerM2 = request.getListedPrice()
                 .divide(request.getAreaM2(), 2, RoundingMode.HALF_UP);
 
         UUID draftId = UUID.randomUUID();
-        log.info("[PIPELINE] [4/6] draftId generado: {}", draftId);
 
-        List<CloudinaryUploadParamsDto> uploadParams = cloudinaryUploadService
-                .generateSignedUploadParams(draftId, request.getMediaManifest());
-        log.info("[PIPELINE] [4/6] Signed upload params generados para {} archivos. Primer uploadUrl: {}",
-                uploadParams.size(), uploadParams.isEmpty() ? "N/A" : uploadParams.get(0).getUploadUrl());
+        List<MediaUploadUrlDto> uploadParams = mediaUploadService
+                .generateUploadUrls(draftId, request.getMediaManifest());
 
         Instant now = Instant.now();
         Instant expiresAt = now.plus(Duration.ofHours(draftTtlHours));
@@ -120,19 +105,16 @@ public class PropertyDraftServiceImpl implements IPropertyDraftService {
 
         Map<String, PropertyDraftMedia> mediaFiles = new HashMap<>();
         for (MediaManifestItemDto item : request.getMediaManifest()) {
-            String publicId = cloudinaryUploadService.buildPublicId(draftId, item.getFileKey());
-            PropertyDraftMedia media = new PropertyDraftMedia(
+            String stagingKey = mediaUploadService.buildStagingKey(draftId, item.getFileKey());
+            mediaFiles.put(item.getFileKey(), new PropertyDraftMedia(
                     UUID.randomUUID(),
                     draftId,
                     item.getFileKey(),
                     item.getContentType(),
-                    publicId,
+                    stagingKey,
                     "PENDING",
                     item.getClassification()
-            );
-            mediaFiles.put(item.getFileKey(), media);
-            log.debug("[PIPELINE] Media registrada: fileKey={}, publicId={}, contentType={}",
-                    item.getFileKey(), publicId, item.getContentType());
+            ));
         }
 
         PropertyDraft.PropertyTypeData propertyTypeData = new PropertyDraft.PropertyTypeData(
@@ -178,11 +160,7 @@ public class PropertyDraftServiceImpl implements IPropertyDraftService {
                 .expiresAt(expiresAt)
                 .build();
 
-        log.info("[PIPELINE] [5/6] Draft construido: draftId={}, status=PENDING_MEDIA, totalFiles={}, expiresAt={}",
-                draftId, draft.getTotalFiles(), expiresAt);
-
         draftRepository.save(draft);
-        log.info("[PIPELINE] [6/6] Draft guardado en Redis. draftId={} listo para recibir uploads de Cloudinary.", draftId);
 
         return new CreatePropertyDraftResponseDto(
                 draftId,
