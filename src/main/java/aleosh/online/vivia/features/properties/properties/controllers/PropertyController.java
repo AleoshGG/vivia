@@ -1,15 +1,20 @@
 package aleosh.online.vivia.features.properties.properties.controllers;
 
+import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.services.IPropertyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -94,6 +99,29 @@ public class PropertyController {
                 true,
                 response,
                 "Propiedad obtenida exitosamente",
+                HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(
+            summary = "Listar mis propiedades",
+            description = "Retorna las propiedades del lessor autenticado en formato de vista previa. Acepta un parámetro opcional `limit` para limitar el número de resultados.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PreAuthorize("hasRole('LESSOR')")
+    @GetMapping("/me")
+    public ResponseEntity<BaseResponse<List<PropertyPreviewResponseDto>>> getMyProperties(
+            @Parameter(description = "Número máximo de propiedades a retornar")
+            @RequestParam(required = false) Integer limit,
+            Authentication authentication
+    ) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        List<PropertyPreviewResponseDto> result = propertyService.getMyProperties(userDetails.getUserId(), limit);
+
+        return new BaseResponse<>(
+                true,
+                result,
+                "Propiedades obtenidas exitosamente",
                 HttpStatus.OK
         ).buildResponseEntity();
     }

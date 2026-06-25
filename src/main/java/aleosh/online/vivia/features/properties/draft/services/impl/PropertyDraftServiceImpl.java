@@ -155,6 +155,7 @@ public class PropertyDraftServiceImpl implements IPropertyDraftService {
                 .totalVideos(videos.size())
                 .approvedFiles(0)
                 .rejectedFiles(0)
+                .amenityIds(request.getAmenityIds() != null ? request.getAmenityIds() : List.of())
                 .createdAt(now)
                 .updatedAt(now)
                 .expiresAt(expiresAt)

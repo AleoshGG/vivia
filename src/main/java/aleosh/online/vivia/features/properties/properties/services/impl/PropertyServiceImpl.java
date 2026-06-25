@@ -4,6 +4,7 @@ import aleosh.online.vivia.features.address.address.domain.entities.Address;
 import aleosh.online.vivia.features.address.address.domain.repositories.IAddressRepository;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.PropertyMediaDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyEntity;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyMediaEntity;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class PropertyServiceImpl implements IPropertyService {
@@ -137,5 +139,17 @@ public class PropertyServiceImpl implements IPropertyService {
                 .orElseThrow(() -> new PropertyNotFoundException("Property not found for lessor id: " + lessorId));
 
         return mapper.toResponseDtoWithMedia(propertyEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PropertyPreviewResponseDto> getMyProperties(UUID lessorId, Integer limit) {
+        Stream<PropertyPreviewResponseDto> stream = propertyJpaRepository.findAllByLessorId(lessorId)
+                .stream()
+                .map(mapper::toPreviewDto);
+        if (limit != null) {
+            stream = stream.limit(limit);
+        }
+        return stream.collect(Collectors.toList());
     }
 }

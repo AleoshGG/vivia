@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.properties.properties.data.entities;
 
 import aleosh.online.vivia.features.address.address.data.entities.AddressEntity;
+import aleosh.online.vivia.features.properties.amenity.data.entities.AmenityEntity;
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -49,6 +50,17 @@ public class PropertyEntity {
     @EqualsAndHashCode.Exclude
     @Builder.Default
     private List<PropertyMediaEntity> media = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "property_amenity",
+            joinColumns = @JoinColumn(name = "property_id"),
+            inverseJoinColumns = @JoinColumn(name = "amenity_id")
+    )
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @Builder.Default
+    private List<AmenityEntity> amenities = new ArrayList<>();
 
     @Column(name = "is_available_to_rent", nullable = false)
     private boolean isAvailableToRent = false;
