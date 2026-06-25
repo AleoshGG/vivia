@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/property-types")
+@RequestMapping("/properties/types")
 @Tag(name = "Gestión de Tipos de Propiedad", description = "Endpoints para consultar tipos de propiedad")
 public class PropertyTypeController {
 

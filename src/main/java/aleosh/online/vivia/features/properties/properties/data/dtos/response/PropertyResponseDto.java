@@ -1,5 +1,7 @@
 package aleosh.online.vivia.features.properties.properties.data.dtos.response;
 
+import aleosh.online.vivia.features.properties.amenity.data.dtos.response.AmenityResponseDto;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,4 +42,8 @@ public class PropertyResponseDto {
 
     @Builder.Default
     private List<PropertyMediaResponseDto> media = new ArrayList<>();
+
+    @Schema(description = "Lista de amenidades asociadas a la propiedad")
+    @Builder.Default
+    private List<AmenityResponseDto> amenities = new ArrayList<>();
 }

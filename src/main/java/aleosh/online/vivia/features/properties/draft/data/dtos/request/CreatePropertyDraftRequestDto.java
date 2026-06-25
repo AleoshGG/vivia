@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -87,6 +88,12 @@ public class CreatePropertyDraftRequestDto {
     @NotNull(message = "Listed price is required")
     @DecimalMin(value = "0.01", message = "Listed price must be greater than zero")
     private BigDecimal listedPrice;
+
+    @Schema(
+            description = "IDs de las amenidades de la propiedad (opcional)",
+            example = "[\"550e8400-e29b-41d4-a716-446655440010\", \"550e8400-e29b-41d4-a716-446655440011\"]"
+    )
+    private List<UUID> amenityIds = new ArrayList<>();
 
     @Schema(description = "Lista de archivos multimedia a subir")
     @NotNull(message = "Media manifest is required")

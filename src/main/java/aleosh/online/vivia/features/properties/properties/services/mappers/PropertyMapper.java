@@ -1,6 +1,9 @@
 package aleosh.online.vivia.features.properties.properties.services.mappers;
 
+import aleosh.online.vivia.features.properties.amenity.data.dtos.response.AmenityResponseDto;
+import aleosh.online.vivia.features.properties.amenity.data.entities.AmenityEntity;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyMediaResponseDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyEntity;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyMediaEntity;
@@ -52,6 +55,13 @@ public class PropertyMapper {
                     .collect(Collectors.toList());
         }
 
+        List<AmenityResponseDto> amenityDtos = new ArrayList<>();
+        if (entity.getAmenities() != null) {
+            amenityDtos = entity.getAmenities().stream()
+                    .map(this::toAmenityResponseDto)
+                    .collect(Collectors.toList());
+        }
+
         return PropertyResponseDto.builder()
                 .id(entity.getId())
                 .lessorId(entity.getLessor() != null ? entity.getLessor().getId() : null)
@@ -71,6 +81,46 @@ public class PropertyMapper {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .media(mediaDtos)
+                .amenities(amenityDtos)
+                .build();
+    }
+
+    public PropertyPreviewResponseDto toPreviewDto(PropertyEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        String mainImageUrl = null;
+        if (entity.getMedia() != null) {
+            mainImageUrl = entity.getMedia().stream()
+                    .filter(m -> "MAIN".equals(m.getClassification()))
+                    .findFirst()
+                    .map(PropertyMediaEntity::getUrl)
+                    .orElse(null);
+        }
+
+        String propertyTypeName = entity.getPropertyType() != null ? entity.getPropertyType().getName() : null;
+
+        return new PropertyPreviewResponseDto(
+                entity.getId(),
+                mainImageUrl,
+                entity.getTitle(),
+                entity.getListedPrice(),
+                entity.getAreaM2(),
+                entity.getBedrooms(),
+                entity.getBathrooms(),
+                propertyTypeName
+        );
+    }
+
+    private AmenityResponseDto toAmenityResponseDto(AmenityEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        return AmenityResponseDto.builder()
+                .id(entity.getId())
+                .name(entity.getName())
                 .build();
     }
 

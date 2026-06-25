@@ -4,8 +4,12 @@ import aleosh.online.vivia.features.properties.draft.domain.exceptions.InvalidPr
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -34,6 +38,7 @@ public class PropertyDraft {
     private final int totalVideos;
     private final int approvedFiles;
     private final int rejectedFiles;
+    private final List<UUID> amenityIds;
     private final Instant createdAt;
     private final Instant updatedAt;
     private final Instant expiresAt;
@@ -61,6 +66,7 @@ public class PropertyDraft {
         this.totalVideos = builder.totalVideos;
         this.approvedFiles = builder.approvedFiles;
         this.rejectedFiles = builder.rejectedFiles;
+        this.amenityIds = builder.amenityIds != null ? builder.amenityIds : new ArrayList<>();
         this.createdAt = builder.createdAt;
         this.updatedAt = builder.updatedAt;
         this.expiresAt = builder.expiresAt;
@@ -186,6 +192,10 @@ public class PropertyDraft {
         return updatedAt;
     }
 
+    public List<UUID> getAmenityIds() {
+        return amenityIds;
+    }
+
     public Instant getExpiresAt() {
         return expiresAt;
     }
@@ -219,6 +229,8 @@ public class PropertyDraft {
         private int totalVideos;
         private int approvedFiles;
         private int rejectedFiles;
+        @JsonProperty("amenityIds")
+        private List<UUID> amenityIds;
         private Instant createdAt;
         private Instant updatedAt;
         private Instant expiresAt;
@@ -330,6 +342,11 @@ public class PropertyDraft {
 
         public Builder rejectedFiles(int rejectedFiles) {
             this.rejectedFiles = rejectedFiles;
+            return this;
+        }
+
+        public Builder amenityIds(List<UUID> amenityIds) {
+            this.amenityIds = amenityIds;
             return this;
         }
 

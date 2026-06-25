@@ -50,4 +50,9 @@ public class UserRepositoryAdapter implements IUserRepository {
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
+
+    @Override
+    public Optional<User> findById(UUID id) {
+        return userRepository.findById(id).map(userMapper::toDomain);
+    }
 }
