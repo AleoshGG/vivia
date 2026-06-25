@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.properties.properties.services;
 
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 
@@ -9,7 +10,7 @@ import java.util.UUID;
 
 public interface IPropertyService {
     PropertyResponseDto create(CreatePropertyDto request);
-    PropertyResponseDto getById(UUID id);
+    PropertyDetailResponseDto getDetail(UUID propertyId, UUID userId, boolean isLessee);
     List<PropertyResponseDto> getAll();
     void deleteById(UUID id);
     PropertyResponseDto getByLessorId(UUID lessorId);

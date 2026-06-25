@@ -2,8 +2,10 @@ package aleosh.online.vivia.features.properties.properties.services.impl;
 
 import aleosh.online.vivia.features.address.address.domain.entities.Address;
 import aleosh.online.vivia.features.address.address.domain.repositories.IAddressRepository;
+import aleosh.online.vivia.features.properties.likes.domain.repositories.IPropertyLikeRepository;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.PropertyMediaDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyEntity;
@@ -13,6 +15,7 @@ import aleosh.online.vivia.features.properties.properties.domain.entities.Proper
 import aleosh.online.vivia.features.properties.properties.domain.exceptions.PropertyNotFoundException;
 import aleosh.online.vivia.features.properties.properties.domain.repositories.IPropertyRepository;
 import aleosh.online.vivia.features.properties.properties.services.IPropertyService;
+import aleosh.online.vivia.features.properties.properties.services.mappers.PropertyDetailMapper;
 import aleosh.online.vivia.features.properties.properties.services.mappers.PropertyMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -31,23 +34,28 @@ public class PropertyServiceImpl implements IPropertyService {
     private final IAddressRepository addressRepository;
     private final PropertyRepository propertyJpaRepository;
     private final PropertyMapper mapper;
+    private final PropertyDetailMapper detailMapper;
+    private final IPropertyLikeRepository likeRepository;
 
     public PropertyServiceImpl(
             IPropertyRepository propertyRepository,
             IAddressRepository addressRepository,
             PropertyRepository propertyJpaRepository,
-            @Qualifier("propertyServiceMapper") PropertyMapper mapper
+            @Qualifier("propertyServiceMapper") PropertyMapper mapper,
+            PropertyDetailMapper detailMapper,
+            IPropertyLikeRepository likeRepository
     ) {
         this.propertyRepository = propertyRepository;
         this.addressRepository = addressRepository;
         this.propertyJpaRepository = propertyJpaRepository;
         this.mapper = mapper;
+        this.detailMapper = detailMapper;
+        this.likeRepository = likeRepository;
     }
 
     @Override
     @Transactional
     public PropertyResponseDto create(CreatePropertyDto request) {
-        // 1. Create address first
         Address address = Address.builder()
                 .id(UUID.randomUUID())
                 .neighborhoodId(request.getNeighborhoodId())
@@ -58,7 +66,6 @@ public class PropertyServiceImpl implements IPropertyService {
 
         Address savedAddress = addressRepository.save(address);
 
-        // 2. Create property with the address ID
         Property property = Property.builder()
                 .id(UUID.randomUUID())
                 .lessorId(request.getLessorId())
@@ -79,7 +86,6 @@ public class PropertyServiceImpl implements IPropertyService {
 
         Property savedProperty = propertyRepository.save(property);
 
-        // 3. Add media to the property if provided
         if (request.getMedia() != null && !request.getMedia().isEmpty()) {
             PropertyEntity propertyEntity = propertyJpaRepository.findById(savedProperty.getId())
                     .orElseThrow(() -> new PropertyNotFoundException("Property not found after creation"));
@@ -100,7 +106,6 @@ public class PropertyServiceImpl implements IPropertyService {
             propertyJpaRepository.save(propertyEntity);
         }
 
-        // 4. Fetch the complete property with media for the response
         PropertyEntity completeProperty = propertyJpaRepository.findById(savedProperty.getId())
                 .orElseThrow(() -> new PropertyNotFoundException("Property not found after creation"));
 
@@ -109,19 +114,19 @@ public class PropertyServiceImpl implements IPropertyService {
 
     @Override
     @Transactional(readOnly = true)
-    public PropertyResponseDto getById(UUID id) {
-        PropertyEntity propertyEntity = propertyJpaRepository.findById(id)
-                .orElseThrow(() -> new PropertyNotFoundException("Property not found with id: " + id));
+    public PropertyDetailResponseDto getDetail(UUID propertyId, UUID userId, boolean isLessee) {
+        PropertyEntity entity = propertyJpaRepository.findById(propertyId)
+                .orElseThrow(() -> new PropertyNotFoundException("Property not found with id: " + propertyId));
 
-        return mapper.toResponseDtoWithMedia(propertyEntity);
+        boolean liked = isLessee && likeRepository.existsByUserIdAndPropertyId(userId, propertyId);
+
+        return detailMapper.toDetailResponse(entity, isLessee, liked);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<PropertyResponseDto> getAll() {
-        List<PropertyEntity> propertyEntities = propertyJpaRepository.findAll();
-
-        return propertyEntities.stream()
+        return propertyJpaRepository.findAll().stream()
                 .map(mapper::toResponseDtoWithMedia)
                 .collect(Collectors.toList());
     }

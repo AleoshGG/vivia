@@ -3,6 +3,7 @@ package aleosh.online.vivia.features.properties.properties.controllers;
 import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.services.IPropertyService;
@@ -50,15 +51,23 @@ public class PropertyController {
 //    }
 
     @Operation(
-            summary = "Obtener propiedad por ID",
-            description = "Devuelve los detalles de una propiedad específica incluyendo sus imágenes y videos"
+            summary = "Obtener detalle de propiedad",
+            description = "Devuelve el detalle completo de una propiedad. Si el token es de un LESSEE incluye datos del lessor y estado de like.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
-    public ResponseEntity<BaseResponse<PropertyResponseDto>> getById(
+    public ResponseEntity<BaseResponse<PropertyDetailResponseDto>> getDetail(
             @Parameter(description = "ID de la propiedad", required = true)
-            @PathVariable UUID id
+            @PathVariable UUID id,
+            Authentication authentication
     ) {
-        PropertyResponseDto response = propertyService.getById(id);
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        UUID userId = userDetails.getUserId();
+        boolean isLessee = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_LESSEE"));
+
+        PropertyDetailResponseDto response = propertyService.getDetail(id, userId, isLessee);
 
         return new BaseResponse<>(
                 true,
