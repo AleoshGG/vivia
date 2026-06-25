@@ -8,6 +8,7 @@ import aleosh.online.vivia.features.properties.draft.messaging.publishers.Conten
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +42,7 @@ public class ValidationWebhookController {
     @PostMapping("/content/result")
     public ResponseEntity<Void> contentResult(
             @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey,
-            @RequestBody ValidationResultWebhookDto body
+            @Valid @RequestBody ValidationResultWebhookDto body
     ) {
         if (!internalApiKey.equals(apiKey)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -62,7 +63,7 @@ public class ValidationWebhookController {
     @PostMapping("/anomaly/result")
     public ResponseEntity<Void> anomalyResult(
             @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey,
-            @RequestBody ValidationResultWebhookDto body
+            @Valid @RequestBody ValidationResultWebhookDto body
     ) {
         if (!internalApiKey.equals(apiKey)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

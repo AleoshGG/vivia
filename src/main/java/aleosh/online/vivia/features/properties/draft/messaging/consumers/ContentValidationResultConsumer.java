@@ -41,12 +41,15 @@ public class ContentValidationResultConsumer {
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_CONTENT_VALIDATION_RESULT)
     public void handle(ContentValidationResultEvent event) {
-        log.info("Resultado de validación de contenido recibido: draftId={}, approved={}",
+        log.info("[ContentValidationResult] Resultado recibido: draftId={}, approved={}",
                 event.getDraftId(), event.isApproved());
 
         Optional<PropertyDraft> draftOpt = draftRepository.getById(event.getDraftId());
         if (draftOpt.isEmpty()) {
-            log.warn("Draft {} no encontrado en Redis al procesar resultado de validación de contenido", event.getDraftId());
+            // El draft expiró en Redis antes de recibir el resultado — no hay a quién notificar
+            log.error("[MONITOR] event=DRAFT_NOT_FOUND step=CONTENT_VALIDATION_RESULT draftId={} " +
+                    "cause=El draft ya no existe en Redis, pudo haber expirado por TTL antes de recibir el resultado de validación",
+                    event.getDraftId());
             return;
         }
 
@@ -60,31 +63,84 @@ public class ContentValidationResultConsumer {
     }
 
     private void handleRejection(PropertyDraft draft, String reason) {
-        log.info("Contenido rechazado para draftId={}: {}", draft.getId(), reason);
+        log.info("[ContentValidationResult] Contenido rechazado para draftId={}: {}", draft.getId(), reason);
 
-        draftRepository.updateStatus(draft.getId(), "CONTENT_REJECTED");
+        try {
+            draftRepository.updateStatus(draft.getId(), "CONTENT_REJECTED");
+        } catch (Exception e) {
+            log.error("[MONITOR] event=UPDATE_STATUS_FAILED step=CONTENT_REJECTION draftId={} " +
+                    "cause=No se pudo actualizar el estado del draft en Redis error={}",
+                    draft.getId(), e.getMessage());
+        }
 
-        notificationPublisher.publish(new NotificationEvent(
-                draft.getLessorId(),
-                "Tu propiedad no pudo ser publicada",
-                "El contenido multimedia no cumple con nuestras políticas. " +
-                        (reason != null ? reason : ""),
-                Map.of(
-                        "draftId", draft.getId().toString(),
-                        "status", "CONTENT_REJECTED"
-                )
-        ));
+        try {
+            notificationPublisher.publish(new NotificationEvent(
+                    draft.getLessorId(),
+                    "Tu propiedad no pudo ser publicada",
+                    "El contenido multimedia no cumple con nuestras políticas. " +
+                            (reason != null ? reason : ""),
+                    Map.of(
+                            "draftId", draft.getId().toString(),
+                            "status", "CONTENT_REJECTED"
+                    )
+            ));
+        } catch (Exception e) {
+            log.error("[MONITOR] event=NOTIFICATION_FAILED step=CONTENT_REJECTION draftId={} lessorId={} " +
+                    "cause=No se pudo enviar la notificación push al arrendador error={}",
+                    draft.getId(), draft.getLessorId(), e.getMessage());
+        }
 
-        mediaStorageService.deleteByDraftId(draft.getId());
+        try {
+            mediaStorageService.deleteByDraftId(draft.getId());
+        } catch (Exception e) {
+            log.error("[MONITOR] event=S3_DELETE_FAILED step=CONTENT_REJECTION draftId={} " +
+                    "cause=No se pudieron eliminar los archivos de S3 del draft rechazado, quedan huérfanos en staging error={}",
+                    draft.getId(), e.getMessage());
+        }
 
-        draftRepository.deleteById(draft.getId());
+        try {
+            draftRepository.deleteById(draft.getId());
+        } catch (Exception e) {
+            log.error("[MONITOR] event=DRAFT_DELETE_FAILED step=CONTENT_REJECTION draftId={} " +
+                    "cause=No se pudo eliminar el draft de Redis, se eliminará al vencer el TTL error={}",
+                    draft.getId(), e.getMessage());
+        }
     }
 
     private void handleApproval(PropertyDraft draft) {
-        log.info("Contenido aprobado para draftId={}. Disparando validación de anomalías.", draft.getId());
+        log.info("[ContentValidationResult] Contenido aprobado para draftId={}. Disparando validación de anomalías.",
+                draft.getId());
 
-        draftRepository.updateStatus(draft.getId(), "ANOMALY_VALIDATION_PENDING");
+        try {
+            draftRepository.updateStatus(draft.getId(), "ANOMALY_VALIDATION_PENDING");
+        } catch (Exception e) {
+            log.error("[MONITOR] event=UPDATE_STATUS_FAILED step=CONTENT_APPROVAL draftId={} " +
+                    "cause=No se pudo actualizar el estado del draft a ANOMALY_VALIDATION_PENDING error={}",
+                    draft.getId(), e.getMessage());
+        }
 
-        anomalyValidationPublisher.publish(new AnomalyValidationSubmitEvent(draft));
+        try {
+            anomalyValidationPublisher.publish(new AnomalyValidationSubmitEvent(draft));
+        } catch (Exception e) {
+            log.error("[MONITOR] event=ANOMALY_PUBLISH_FAILED step=CONTENT_APPROVAL draftId={} lessorId={} " +
+                    "cause=No se pudo encolar el evento de validación de anomalías, el draft quedará en ANOMALY_VALIDATION_PENDING hasta que expire el TTL error={}",
+                    draft.getId(), draft.getLessorId(), e.getMessage());
+
+            try {
+                notificationPublisher.publish(new NotificationEvent(
+                        draft.getLessorId(),
+                        "Ocurrió un problema al procesar tu propiedad",
+                        "Hubo un error interno al continuar el proceso de validación. Por favor intenta publicar tu propiedad de nuevo.",
+                        Map.of(
+                                "draftId", draft.getId().toString(),
+                                "status", "VALIDATION_ERROR"
+                        )
+                ));
+            } catch (Exception notifEx) {
+                log.error("[MONITOR] event=NOTIFICATION_FAILED step=CONTENT_APPROVAL_ERROR draftId={} lessorId={} " +
+                        "cause=Fallo en cascada: no se pudo publicar el evento de anomalías NI notificar al arrendador error={}",
+                        draft.getId(), draft.getLessorId(), notifEx.getMessage());
+            }
+        }
     }
 }
