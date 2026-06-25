@@ -10,6 +10,8 @@ import aleosh.online.vivia.features.properties.draft.services.IPropertyPublicati
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyEntity;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyMediaEntity;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyTypeEntity;
+import aleosh.online.vivia.features.properties.amenity.data.entities.AmenityEntity;
+import aleosh.online.vivia.features.properties.amenity.data.repositories.AmenityRepository;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyRepository;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyTypeRepository;
 import aleosh.online.vivia.features.users.lessor.data.repositories.LessorRepository;
@@ -31,6 +33,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
     private final PropertyTypeRepository propertyTypeRepository;
     private final NeighborhoodRepository neighborhoodRepository;
     private final LessorRepository lessorRepository;
+    private final AmenityRepository amenityRepository;
     private final String bucket;
     private final String region;
 
@@ -40,6 +43,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
             PropertyTypeRepository propertyTypeRepository,
             NeighborhoodRepository neighborhoodRepository,
             LessorRepository lessorRepository,
+            AmenityRepository amenityRepository,
             @Value("${aws.s3.bucket}") String bucket,
             @Value("${aws.region}") String region
     ) {
@@ -48,6 +52,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
         this.propertyTypeRepository = propertyTypeRepository;
         this.neighborhoodRepository = neighborhoodRepository;
         this.lessorRepository = lessorRepository;
+        this.amenityRepository = amenityRepository;
         this.bucket = bucket;
         this.region = region;
     }
@@ -74,6 +79,10 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
                 .build();
         addressRepository.save(address);
 
+        List<AmenityEntity> amenities = amenityRepository.findAllById(
+                draft.getAmenityIds() != null ? draft.getAmenityIds() : List.of()
+        );
+
         LocalDateTime now = LocalDateTime.now();
 
         PropertyEntity property = PropertyEntity.builder()
@@ -94,6 +103,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
                 .pricePerM2(draft.getPricePerM2())
                 .createdAt(now)
                 .updatedAt(now)
+                .amenities(amenities)
                 .build();
 
         List<PropertyMediaEntity> mediaEntities = buildMediaEntities(draft, property);

@@ -39,7 +39,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/lessors/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/lessees/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login/**", "/auth/login", "/auth/refresh").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/properties").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/properties", "/properties/types").permitAll()
                         .requestMatchers("/.well-known/assetlinks.json").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/actuator/**").permitAll()

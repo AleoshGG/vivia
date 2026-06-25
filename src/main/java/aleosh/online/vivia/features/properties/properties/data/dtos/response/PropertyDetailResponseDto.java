@@ -1,28 +1,23 @@
 package aleosh.online.vivia.features.properties.properties.data.dtos.response;
 
-import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.UUID;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Schema(description = "Respuesta del endpoint GET /properties/{id}")
 public class PropertyDetailResponseDto {
-    private UUID id;
-    private String title;
-    private String description;
-    private Double price;
-    private String departmentType;
-    private Double area;
-    private int roomsNumber;
-    private int bathroomsNumber;
-    private int parkingNumber;
-    private LessorResponseDto lessor;
-    private List<String> imageUrls;
+
+    @Schema(description = "Datos completos de la propiedad, incluyendo dirección, tipo, amenidades y (para LESSEE) arrendador y favorito")
+    private PropertyDetailContentDto content;
+
+    @Schema(description = "Hasta 3 imágenes de la propiedad: la primera es siempre la imagen MAIN; el resto complementa hasta el máximo")
+    private List<PropertyMediaResponseDto> contentMedia;
 }
