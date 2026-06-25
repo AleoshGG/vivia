@@ -1,21 +1,26 @@
 package aleosh.online.vivia.features.users.lessee.controllers;
 
+import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeBiometricChallengeDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeBiometricVerifyDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeGoogleDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseePasswordDto;
+import aleosh.online.vivia.features.users.lessee.data.dtos.request.UpdateLesseeUbicationDto;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -143,6 +148,25 @@ public class LesseeController {
 
         return new BaseResponse<>(
                 true, authResponseDto, "Arrendatario registrado y logueado exitosamente", HttpStatus.CREATED
+        ).buildResponseEntity();
+    }
+
+    @Operation(
+            summary = "Actualizar ubicación del arrendatario",
+            description = "Actualiza la latitud y longitud del arrendatario autenticado.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PreAuthorize("hasRole('LESSEE')")
+    @PutMapping("/ubication")
+    public ResponseEntity<BaseResponse<Object>> updateUbication(
+            @Valid @RequestBody UpdateLesseeUbicationDto dto,
+            Authentication authentication
+    ) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        lesseeService.updateUbication(userDetails.getUserId(), dto);
+
+        return new BaseResponse<>(
+                true, null, "Ubicación actualizada exitosamente", HttpStatus.OK
         ).buildResponseEntity();
     }
 

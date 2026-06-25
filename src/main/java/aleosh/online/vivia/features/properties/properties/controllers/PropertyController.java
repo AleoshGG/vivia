@@ -4,6 +4,7 @@ import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyMediaResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.services.IPropertyService;
@@ -131,6 +132,27 @@ public class PropertyController {
                 true,
                 result,
                 "Propiedades obtenidas exitosamente",
+                HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(
+            summary = "Obtener media de una propiedad",
+            description = "Devuelve todos los registros de PropertyMedia (imágenes y videos) asociados a una propiedad.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/media/{id}")
+    public ResponseEntity<BaseResponse<List<PropertyMediaResponseDto>>> getMedia(
+            @Parameter(description = "ID de la propiedad", required = true)
+            @PathVariable UUID id
+    ) {
+        List<PropertyMediaResponseDto> result = propertyService.getMediaByPropertyId(id);
+
+        return new BaseResponse<>(
+                true,
+                result,
+                "Media obtenida exitosamente",
                 HttpStatus.OK
         ).buildResponseEntity();
     }

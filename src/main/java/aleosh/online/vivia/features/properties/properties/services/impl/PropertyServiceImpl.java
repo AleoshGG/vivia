@@ -6,10 +6,12 @@ import aleosh.online.vivia.features.properties.likes.domain.repositories.IProper
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.PropertyMediaDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyMediaResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyEntity;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyMediaEntity;
+import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyMediaRepository;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyRepository;
 import aleosh.online.vivia.features.properties.properties.domain.entities.Property;
 import aleosh.online.vivia.features.properties.properties.domain.exceptions.PropertyNotFoundException;
@@ -36,6 +38,7 @@ public class PropertyServiceImpl implements IPropertyService {
     private final PropertyMapper mapper;
     private final PropertyDetailMapper detailMapper;
     private final IPropertyLikeRepository likeRepository;
+    private final PropertyMediaRepository propertyMediaRepository;
 
     public PropertyServiceImpl(
             IPropertyRepository propertyRepository,
@@ -43,7 +46,8 @@ public class PropertyServiceImpl implements IPropertyService {
             PropertyRepository propertyJpaRepository,
             @Qualifier("propertyServiceMapper") PropertyMapper mapper,
             PropertyDetailMapper detailMapper,
-            IPropertyLikeRepository likeRepository
+            IPropertyLikeRepository likeRepository,
+            PropertyMediaRepository propertyMediaRepository
     ) {
         this.propertyRepository = propertyRepository;
         this.addressRepository = addressRepository;
@@ -51,6 +55,7 @@ public class PropertyServiceImpl implements IPropertyService {
         this.mapper = mapper;
         this.detailMapper = detailMapper;
         this.likeRepository = likeRepository;
+        this.propertyMediaRepository = propertyMediaRepository;
     }
 
     @Override
@@ -144,6 +149,19 @@ public class PropertyServiceImpl implements IPropertyService {
                 .orElseThrow(() -> new PropertyNotFoundException("Property not found for lessor id: " + lessorId));
 
         return mapper.toResponseDtoWithMedia(propertyEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PropertyMediaResponseDto> getMediaByPropertyId(UUID propertyId) {
+        return propertyMediaRepository.findAllByProperty_Id(propertyId).stream()
+                .map(m -> PropertyMediaResponseDto.builder()
+                        .id(m.getId())
+                        .url(m.getUrl())
+                        .type(m.getType() != null ? m.getType().name() : null)
+                        .classification(m.getClassification())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -1,27 +1,32 @@
 package aleosh.online.vivia.features.properties.properties.data.dtos.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.UUID;
 
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(description = "Datos del arrendador. Solo se incluye cuando quien consulta tiene el rol LESSEE.")
 public class PropertyDetailLessorDto {
 
-    private final UUID id;
-    private final String name;
-    private final String paternalSurname;
-    private final String maternalSurname;
-    private final String photoUrl;
+    @Schema(description = "ID del arrendador")
+    private UUID id;
 
-    public PropertyDetailLessorDto(UUID id, String name, String paternalSurname,
-                                   String maternalSurname, String photoUrl) {
-        this.id = id;
-        this.name = name;
-        this.paternalSurname = paternalSurname;
-        this.maternalSurname = maternalSurname;
-        this.photoUrl = photoUrl;
-    }
+    @Schema(description = "Nombre(s)")
+    private String name;
 
-    public UUID getId() { return id; }
-    public String getName() { return name; }
-    public String getPaternalSurname() { return paternalSurname; }
-    public String getMaternalSurname() { return maternalSurname; }
-    public String getPhotoUrl() { return photoUrl; }
+    @Schema(description = "Apellido paterno")
+    private String paternalSurname;
+
+    @Schema(description = "Apellido materno")
+    private String maternalSurname;
+
+    @Schema(description = "URL de la foto de perfil")
+    private String photoUrl;
 }

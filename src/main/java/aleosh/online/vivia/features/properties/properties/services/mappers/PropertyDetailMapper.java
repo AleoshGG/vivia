@@ -27,7 +27,10 @@ public class PropertyDetailMapper {
     public PropertyDetailResponseDto toDetailResponse(PropertyEntity entity, boolean isLessee, boolean liked) {
         PropertyDetailContentDto content = buildContent(entity, isLessee, liked);
         List<PropertyMediaResponseDto> contentMedia = buildContentMedia(entity);
-        return new PropertyDetailResponseDto(content, contentMedia);
+        return PropertyDetailResponseDto.builder()
+                .content(content)
+                .contentMedia(contentMedia)
+                .build();
     }
 
     private PropertyDetailContentDto buildContent(PropertyEntity entity, boolean isLessee, boolean liked) {
@@ -58,34 +61,34 @@ public class PropertyDetailMapper {
         if (entity.getPropertyType() == null) {
             return null;
         }
-        return new PropertyDetailPropertyTypeDto(
-                entity.getPropertyType().getId(),
-                entity.getPropertyType().getName()
-        );
+        return PropertyDetailPropertyTypeDto.builder()
+                .id(entity.getPropertyType().getId())
+                .name(entity.getPropertyType().getName())
+                .build();
     }
 
     private PropertyDetailAddressDto toAddressDto(AddressEntity address) {
         if (address == null) {
             return null;
         }
-        return new PropertyDetailAddressDto(
-                address.getId(),
-                address.getStreet(),
-                address.getExteriorNumber(),
-                address.getInteriorNumber(),
-                toNeighborhoodDto(address.getNeighborhood())
-        );
+        return PropertyDetailAddressDto.builder()
+                .id(address.getId())
+                .street(address.getStreet())
+                .exteriorNumber(address.getExteriorNumber())
+                .interiorNumber(address.getInteriorNumber())
+                .neighborhood(toNeighborhoodDto(address.getNeighborhood()))
+                .build();
     }
 
     private PropertyDetailNeighborhoodDto toNeighborhoodDto(NeighborhoodEntity neighborhood) {
         if (neighborhood == null) {
             return null;
         }
-        return new PropertyDetailNeighborhoodDto(
-                neighborhood.getId(),
-                neighborhood.getName(),
-                neighborhood.getPostalCode()
-        );
+        return PropertyDetailNeighborhoodDto.builder()
+                .id(neighborhood.getId())
+                .name(neighborhood.getName())
+                .postalCode(neighborhood.getPostalCode())
+                .build();
     }
 
     private List<AmenityResponseDto> toAmenityDtos(List<AmenityEntity> amenities) {
@@ -105,22 +108,39 @@ public class PropertyDetailMapper {
         if (user == null) {
             return null;
         }
-        return new PropertyDetailLessorDto(
-                lessor.getId(),
-                user.getName(),
-                user.getPaternalSurname(),
-                user.getMaternalSurname(),
-                user.getPhotoUrl()
-        );
+        return PropertyDetailLessorDto.builder()
+                .id(lessor.getId())
+                .name(user.getName())
+                .paternalSurname(user.getPaternalSurname())
+                .maternalSurname(user.getMaternalSurname())
+                .photoUrl(user.getPhotoUrl())
+                .build();
     }
 
     private List<PropertyMediaResponseDto> buildContentMedia(PropertyEntity entity) {
         if (entity.getMedia() == null) {
             return new ArrayList<>();
         }
-        return entity.getMedia().stream()
-                .map(this::toMediaDto)
+
+        List<PropertyMediaEntity> images = entity.getMedia().stream()
+                .filter(m -> PropertyMediaEntity.MediaType.IMAGE.equals(m.getType()))
                 .collect(Collectors.toList());
+
+        List<PropertyMediaResponseDto> result = new ArrayList<>();
+
+        images.stream()
+                .filter(m -> "MAIN".equals(m.getClassification()))
+                .findFirst()
+                .map(this::toMediaDto)
+                .ifPresent(result::add);
+
+        images.stream()
+                .filter(m -> !"MAIN".equals(m.getClassification()))
+                .limit(3 - result.size())
+                .map(this::toMediaDto)
+                .forEach(result::add);
+
+        return result;
     }
 
     private PropertyMediaResponseDto toMediaDto(PropertyMediaEntity media) {

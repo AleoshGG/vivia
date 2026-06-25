@@ -1,9 +1,16 @@
 package aleosh.online.vivia.features.users.users.data.dtos.response;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.UUID;
 
-public record UserMeResponseDto(
-        UUID id,
-        String name,
-        String photoUrl
-) {}
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserMeResponseDto {
+    private UUID id;
+    private String name;
+    private String photoUrl;
+}

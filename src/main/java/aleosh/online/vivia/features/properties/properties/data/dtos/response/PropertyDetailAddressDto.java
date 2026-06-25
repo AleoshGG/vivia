@@ -1,27 +1,32 @@
 package aleosh.online.vivia.features.properties.properties.data.dtos.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.UUID;
 
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(description = "Dirección de la propiedad")
 public class PropertyDetailAddressDto {
 
-    private final UUID id;
-    private final String street;
-    private final String exteriorNumber;
-    private final String interiorNumber;
-    private final PropertyDetailNeighborhoodDto neighborhood;
+    @Schema(description = "ID de la dirección")
+    private UUID id;
 
-    public PropertyDetailAddressDto(UUID id, String street, String exteriorNumber,
-                                    String interiorNumber, PropertyDetailNeighborhoodDto neighborhood) {
-        this.id = id;
-        this.street = street;
-        this.exteriorNumber = exteriorNumber;
-        this.interiorNumber = interiorNumber;
-        this.neighborhood = neighborhood;
-    }
+    @Schema(description = "Calle")
+    private String street;
 
-    public UUID getId() { return id; }
-    public String getStreet() { return street; }
-    public String getExteriorNumber() { return exteriorNumber; }
-    public String getInteriorNumber() { return interiorNumber; }
-    public PropertyDetailNeighborhoodDto getNeighborhood() { return neighborhood; }
+    @Schema(description = "Número exterior")
+    private String exteriorNumber;
+
+    @Schema(description = "Número interior (puede ser nulo)")
+    private String interiorNumber;
+
+    @Schema(description = "Colonia")
+    private PropertyDetailNeighborhoodDto neighborhood;
 }

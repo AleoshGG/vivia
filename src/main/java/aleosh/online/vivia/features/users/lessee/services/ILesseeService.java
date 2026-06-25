@@ -5,6 +5,9 @@ import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesse
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeBiometricVerifyDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeGoogleDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseePasswordDto;
+import aleosh.online.vivia.features.users.lessee.data.dtos.request.UpdateLesseeUbicationDto;
+
+import java.util.UUID;
 
 public interface ILesseeService {
 
@@ -13,4 +16,6 @@ public interface ILesseeService {
 
     String startBiometricRegistration(RegisterLesseeBiometricChallengeDto dto);
     AuthResponseDto finishBiometricRegistration(RegisterLesseeBiometricVerifyDto dto);
+
+    void updateUbication(UUID lesseeId, UpdateLesseeUbicationDto dto);
 }

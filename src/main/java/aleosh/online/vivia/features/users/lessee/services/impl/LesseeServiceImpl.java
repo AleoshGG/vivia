@@ -12,8 +12,10 @@ import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesse
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeBiometricVerifyDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeGoogleDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseePasswordDto;
+import aleosh.online.vivia.features.users.lessee.data.dtos.request.UpdateLesseeUbicationDto;
 import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
 import aleosh.online.vivia.features.users.lessee.data.repositories.LesseeRepository;
+import aleosh.online.vivia.features.users.lessee.domain.exceptions.LesseeNotFoundException;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
@@ -320,6 +322,16 @@ public class LesseeServiceImpl implements ILesseeService {
         } catch (Exception e) {
             throw new BiometricException("Error en verificación de registro biométrico: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @Override
+    @Transactional
+    public void updateUbication(UUID lesseeId, UpdateLesseeUbicationDto dto) {
+        LesseeEntity lessee = lesseeRepository.findById(lesseeId)
+                .orElseThrow(() -> new LesseeNotFoundException("Lessee no encontrado con id: " + lesseeId));
+        lessee.setLatitude(dto.getLatitude());
+        lessee.setLongitude(dto.getLongitude());
+        lesseeRepository.save(lessee);
     }
 
     // Clase interna para almacenar datos temporales de registro
