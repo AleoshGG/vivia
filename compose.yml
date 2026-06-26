@@ -1,79 +1,19 @@
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: vivia-db
-    restart: always
-    environment:
-      POSTGRES_DB: ${DB_NAME:-vivia_dev}
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - vivia-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    ports:
-      - "5432:5432"
-
-  redis:
-    image: redis:7-alpine
-    container_name: vivia-redis
-    restart: always
-    command: redis-server ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - vivia-redis-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli ${REDIS_PASSWORD:+-a $$REDIS_PASSWORD} ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    container_name: vivia-rabbitmq
-    restart: always
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-vivia}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
-    volumes:
-      - vivia-rabbitmq-data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   app:
     build: .
     container_name: vivia-app
     restart: always
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     environment:
-      - SPRING_PROFILES_ACTIVE=dev
-      - DB_URL=jdbc:postgresql://db:5432/${DB_NAME:-vivia_dev}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - DB_URL=jdbc:postgresql://vivia-db:5432/${DB_NAME:-vivia_dev}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD}
       - SERVER_PORT=${SERVER_PORT:-8080}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - REDIS_HOST=redis
+      - REDIS_HOST=vivia-redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_HOST=vivia-rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USERNAME=${RABBITMQ_USER:-vivia}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
@@ -88,10 +28,9 @@ services:
       - AWS_S3_BUCKET=${AWS_S3_BUCKET:-vivia-media-bucket}
       - AWS_SNS_REKOGNITION_ROLE_ARN=${AWS_SNS_REKOGNITION_ROLE_ARN}
       - AWS_REKOGNITION_SNS_TOPIC_ARN=${AWS_REKOGNITION_SNS_TOPIC_ARN}
-    ports:
-      - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
+    networks:
+      - vivia_network
 
-volumes:
-  vivia-db-data:
-  vivia-redis-data:
-  vivia-rabbitmq-data:
+networks:
+  vivia_network:
+    external: true

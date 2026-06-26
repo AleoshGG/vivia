@@ -143,6 +143,7 @@ public class PropertyDraftRedisRepository implements IPropertyDraftRepository {
                 .totalVideos(draft.getTotalVideos())
                 .approvedFiles(draft.getApprovedFiles())
                 .rejectedFiles(draft.getRejectedFiles())
+                .amenityIds(draft.getAmenityIds())
                 .createdAt(draft.getCreatedAt())
                 .updatedAt(Instant.now())
                 .expiresAt(draft.getExpiresAt())
