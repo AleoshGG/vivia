@@ -9,6 +9,10 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
+# wait-for-it para esperar infra antes de arrancar
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /wait-for-it.sh
+RUN chmod +x /wait-for-it.sh
+
 # Copiamos el jar desde la etapa de construcción
 COPY --from=build /app/target/*.jar app.jar
 
@@ -17,4 +21,7 @@ ENV SPRING_PROFILES_ACTIVE=dev
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+# Espera RabbitMQ (:5672) y PostgreSQL (:5432) antes de levantar Spring
+ENTRYPOINT ["/wait-for-it.sh", "vivia-rabbitmq:5672", "--", \
+            "/wait-for-it.sh", "vivia-db:5432", "--", \
+            "java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

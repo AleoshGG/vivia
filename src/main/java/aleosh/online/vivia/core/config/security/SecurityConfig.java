@@ -41,7 +41,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login/**", "/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/properties", "/properties/types").permitAll()
                         .requestMatchers("/.well-known/assetlinks.json").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         // Webhooks internos: autenticados por firma del servicio externo, no por JWT

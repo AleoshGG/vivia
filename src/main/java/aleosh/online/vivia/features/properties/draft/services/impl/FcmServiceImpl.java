@@ -7,9 +7,11 @@ import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnProperty(name = "firebase.enabled", havingValue = "true")
 public class FcmServiceImpl implements IFcmService {
 
     private static final Logger log = LoggerFactory.getLogger(FcmServiceImpl.class);
