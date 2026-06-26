@@ -177,6 +177,8 @@ public class LesseeServiceImpl implements ILesseeService {
                 .build();
         userEntity.setLessee(lesseeEntity);
 
+        userRepository.save(userEntity);
+
         String role = "ROLE_LESSEE";
         var authorities = Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority(role));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
