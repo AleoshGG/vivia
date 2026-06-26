@@ -5,6 +5,7 @@ import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
 import aleosh.online.vivia.features.auth.data.repositories.CredentialRepository;
 import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
+import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,9 +18,11 @@ import java.util.Collections;
 public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final CredentialRepository credentialRepository;
+    private final UserRepository userRepository;
 
-    public UserDetailsServiceImpl(CredentialRepository credentialRepository) {
+    public UserDetailsServiceImpl(CredentialRepository credentialRepository, UserRepository userRepository) {
         this.credentialRepository = credentialRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -45,15 +48,13 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     public UserDetails loadUserByIdentifierAndRole(String identifier, String role) {
-        CredentialEntity credential = credentialRepository.findByUserEmailAndCredentialType(identifier, CredentialType.PASSWORD)
+        UserEntity user = userRepository.findByEmail(identifier)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + identifier));
-
-        UserEntity user = credential.getUser();
 
         return new CustomUserDetails(
                 user.getId(),
                 identifier,
-                credential.getSecretData(),
+                "",
                 Collections.singletonList(new SimpleGrantedAuthority(role))
         );
     }
