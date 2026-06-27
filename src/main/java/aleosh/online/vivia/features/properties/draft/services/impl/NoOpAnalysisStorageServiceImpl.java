@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "firebase.enabled", havingValue = "false", matchIfMissing = true)
+@ConditionalOnProperty(name = "firestore.enabled", havingValue = "false", matchIfMissing = true)
 public class NoOpAnalysisStorageServiceImpl implements IAnalysisStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(NoOpAnalysisStorageServiceImpl.class);

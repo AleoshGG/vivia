@@ -15,7 +15,7 @@ import java.time.Instant;
 import java.util.Map;
 
 @Service
-@ConditionalOnProperty(name = "firebase.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "firestore.enabled", havingValue = "true")
 public class AnalysisStorageServiceImpl implements IAnalysisStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(AnalysisStorageServiceImpl.class);

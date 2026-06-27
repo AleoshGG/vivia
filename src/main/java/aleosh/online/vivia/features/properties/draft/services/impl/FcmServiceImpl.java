@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "firebase.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "fcm.enabled", havingValue = "true")
 public class FcmServiceImpl implements IFcmService {
 
     private static final Logger log = LoggerFactory.getLogger(FcmServiceImpl.class);

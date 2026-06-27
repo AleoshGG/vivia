@@ -7,6 +7,7 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -21,7 +22,7 @@ public class FirebaseConfig {
     private Resource firebaseCredentials;
 
     @Bean
-    @ConditionalOnProperty(name = "firebase.enabled", havingValue = "true")
+    @Conditional(AnyFirebaseEnabledCondition.class)
     public FirebaseApp firebaseApp() throws IOException {
         if (FirebaseApp.getApps().isEmpty()) {
             try (InputStream serviceAccount = firebaseCredentials.getInputStream()) {
@@ -35,7 +36,7 @@ public class FirebaseConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "firebase.enabled", havingValue = "true")
+    @ConditionalOnProperty(name = "firestore.enabled", havingValue = "true")
     public Firestore firestore(FirebaseApp firebaseApp) {
         return FirestoreClient.getFirestore(firebaseApp);
     }
