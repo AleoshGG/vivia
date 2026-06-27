@@ -21,13 +21,17 @@ services:
       - JWT_EXPIRATION=${JWT_EXPIRATION:-3600}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-2592000000}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
-      - FIREBASE_KEY_PATH=${FIREBASE_KEY_PATH}
+      - FIREBASE_KEY_PATH=/var/run/secrets/firebase-adminsdk.json
+      - FCM_ENABLED=${FCM_ENABLED:-true}
+      - FIRESTORE_ENABLED=${FIRESTORE_ENABLED:-false}
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_S3_BUCKET=${AWS_S3_BUCKET:-vivia-media-bucket}
       - AWS_SNS_REKOGNITION_ROLE_ARN=${AWS_SNS_REKOGNITION_ROLE_ARN}
       - AWS_REKOGNITION_SNS_TOPIC_ARN=${AWS_REKOGNITION_SNS_TOPIC_ARN}
+    volumes:
+      - ${FIREBASE_KEY_HOST_PATH:-/var/run/secrets/firebase-adminsdk.json}:/var/run/secrets/firebase-adminsdk.json:ro
     networks:
       - vivia_network
 
