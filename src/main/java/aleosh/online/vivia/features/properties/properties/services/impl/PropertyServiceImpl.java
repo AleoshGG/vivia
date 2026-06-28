@@ -175,4 +175,16 @@ public class PropertyServiceImpl implements IPropertyService {
         }
         return stream.collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PropertyPreviewResponseDto> getSuggestions(Integer limit) {
+        Stream<PropertyPreviewResponseDto> stream = propertyJpaRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(mapper::toPreviewDto);
+        if (limit != null) {
+            stream = stream.limit(limit);
+        }
+        return stream.collect(Collectors.toList());
+    }
 }

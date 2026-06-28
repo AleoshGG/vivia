@@ -137,6 +137,27 @@ public class PropertyController {
     }
 
     @Operation(
+            summary = "Sugerencias de propiedades",
+            description = "Retorna propiedades en formato de vista previa ordenadas de la más reciente a la más antigua. Acepta un parámetro opcional `limit`.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PreAuthorize("hasRole('LESSEE')")
+    @GetMapping("/suggestions")
+    public ResponseEntity<BaseResponse<List<PropertyPreviewResponseDto>>> getSuggestions(
+            @Parameter(description = "Número máximo de propiedades a retornar")
+            @RequestParam(required = false) Integer limit
+    ) {
+        List<PropertyPreviewResponseDto> result = propertyService.getSuggestions(limit);
+
+        return new BaseResponse<>(
+                true,
+                result,
+                "Sugerencias obtenidas exitosamente",
+                HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(
             summary = "Obtener media de una propiedad",
             description = "Devuelve todos los registros de PropertyMedia (imágenes y videos) asociados a una propiedad.",
             security = @SecurityRequirement(name = "bearerAuth")

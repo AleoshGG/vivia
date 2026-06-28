@@ -16,5 +16,6 @@ public interface IPropertyService {
     void deleteById(UUID id);
     PropertyResponseDto getByLessorId(UUID lessorId);
     List<PropertyPreviewResponseDto> getMyProperties(UUID lessorId, Integer limit);
+    List<PropertyPreviewResponseDto> getSuggestions(Integer limit);
     List<PropertyMediaResponseDto> getMediaByPropertyId(UUID propertyId);
 }

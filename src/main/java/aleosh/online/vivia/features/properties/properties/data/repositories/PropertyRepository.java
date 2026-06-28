@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface PropertyRepository extends JpaRepository<PropertyEntity, UUID> {
     Optional<PropertyEntity> findByLessorId(UUID lessorId);
     List<PropertyEntity> findAllByLessorId(UUID lessorId);
+    List<PropertyEntity> findAllByOrderByCreatedAtDesc();
 }
