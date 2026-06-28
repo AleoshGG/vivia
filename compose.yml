@@ -5,7 +5,9 @@ services:
     restart: always
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-      - DB_URL=jdbc:postgresql://vivia-db:5432/${DB_NAME:-vivia_dev}
+      # DB_HOST se pasa al contenedor porque el wait-for-it del entrypoint lo usa.
+      - DB_HOST=${DB_HOST}
+      - DB_URL=jdbc:postgresql://${DB_HOST}:5432/${DB_NAME:-vivia}?sslmode=require
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD}
       - SERVER_PORT=${SERVER_PORT:-8080}

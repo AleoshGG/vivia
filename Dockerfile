@@ -21,7 +21,6 @@ ENV SPRING_PROFILES_ACTIVE=dev
 
 EXPOSE 8080
 
-# Espera RabbitMQ (:5672) y PostgreSQL (:5432) antes de levantar Spring
-ENTRYPOINT ["/wait-for-it.sh", "vivia-rabbitmq:5672", "--", \
-            "/wait-for-it.sh", "vivia-db:5432", "--", \
-            "java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+# Espera RabbitMQ y la RDS (DB_HOST) antes de levantar Spring
+ENTRYPOINT ["/bin/sh", "-c", \
+  "/wait-for-it.sh vivia-rabbitmq:5672 -t 60 -- /wait-for-it.sh \"$DB_HOST:5432\" -t 60 -- java -Djava.security.egd=file:/dev/./urandom -jar app.jar"]
