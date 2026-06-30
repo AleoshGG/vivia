@@ -2,11 +2,14 @@ package aleosh.online.vivia.features.users.users.controllers;
 
 import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.core.dtos.BaseResponse;
+import aleosh.online.vivia.features.users.users.data.dtos.request.PhotoPresignRequestDto;
 import aleosh.online.vivia.features.users.users.data.dtos.request.UpdateUserEmailRequestDto;
 import aleosh.online.vivia.features.users.users.data.dtos.request.UpdateUserNameRequestDto;
+import aleosh.online.vivia.features.users.users.data.dtos.response.PhotoPresignResponseDto;
 import aleosh.online.vivia.features.users.users.data.dtos.response.UserMeResponseDto;
 import aleosh.online.vivia.features.users.users.data.dtos.response.UserProfileResponseDto;
 import aleosh.online.vivia.features.users.users.domain.entities.User;
+import aleosh.online.vivia.features.users.users.services.IPhotoPresignService;
 import aleosh.online.vivia.features.users.users.services.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -23,9 +26,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final IUserService userService;
+    private final IPhotoPresignService photoPresignService;
 
-    public UserController(IUserService userService) {
+    public UserController(IUserService userService, IPhotoPresignService photoPresignService) {
         this.userService = userService;
+        this.photoPresignService = photoPresignService;
     }
 
     @Operation(summary = "Perfil mínimo", security = @SecurityRequirement(name = "bearerAuth"))
@@ -64,5 +69,14 @@ public class UserController {
         userService.updateEmail(userDetails.getUserId(), dto);
 
         return new BaseResponse<Void>(true, null, "Correo actualizado", HttpStatus.OK).buildResponseEntity();
+    }
+
+    @Operation(summary = "Solicitar URL de carga de foto de perfil", security = @SecurityRequirement(name = "bearerAuth"))
+    @PutMapping("/me/photo")
+    public ResponseEntity<BaseResponse<PhotoPresignResponseDto>> getPhotoUploadUrl(@Valid @RequestBody PhotoPresignRequestDto dto, Authentication authentication) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        PhotoPresignResponseDto response = photoPresignService.generateUploadUrl(userDetails.getUserId(), dto);
+
+        return new BaseResponse<>(true, response, "URL generada", HttpStatus.OK).buildResponseEntity();
     }
 }

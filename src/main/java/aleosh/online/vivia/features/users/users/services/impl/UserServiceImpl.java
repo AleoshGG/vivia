@@ -77,4 +77,10 @@ public class UserServiceImpl implements IUserService {
         }
         userJpaRepository.updateEmail(userId, dto.getEmail());
     }
+
+    @Override
+    @Transactional
+    public void updatePhotoUrl(UUID userId, String photoUrl) {
+        userJpaRepository.updatePhotoUrl(userId, photoUrl);
+    }
 }

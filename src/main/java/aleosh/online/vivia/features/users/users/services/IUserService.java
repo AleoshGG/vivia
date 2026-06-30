@@ -12,4 +12,5 @@ public interface IUserService {
     UserProfileResponseDto getProfile(UUID userId);
     void updateName(UUID userId, UpdateUserNameRequestDto dto);
     void updateEmail(UUID userId, UpdateUserEmailRequestDto dto);
+    void updatePhotoUrl(UUID userId, String photoUrl);
 }
