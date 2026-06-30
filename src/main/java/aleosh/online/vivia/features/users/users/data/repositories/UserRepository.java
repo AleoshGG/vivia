@@ -19,4 +19,12 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     @Query("SELECT u.fcmToken FROM UserEntity u WHERE u.id = :userId")
     Optional<String> findFcmTokenByUserId(@Param("userId") UUID userId);
+
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.name = :name, u.paternalSurname = :paternalSurname, u.maternalSurname = :maternalSurname WHERE u.id = :userId")
+    void updateName(@Param("userId") UUID userId, @Param("name") String name, @Param("paternalSurname") String paternalSurname, @Param("maternalSurname") String maternalSurname);
+
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.email = :email WHERE u.id = :userId")
+    void updateEmail(@Param("userId") UUID userId, @Param("email") String email);
 }

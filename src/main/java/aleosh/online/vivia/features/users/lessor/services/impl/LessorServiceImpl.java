@@ -38,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 import aleosh.online.vivia.features.users.lessor.data.dtos.response.LessorResponseDto;
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import aleosh.online.vivia.features.users.lessor.data.repositories.LessorRepository;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.UpdateLessorPhoneRequestDto;
+import aleosh.online.vivia.features.users.lessor.domain.exceptions.LessorNotFoundException;
 import aleosh.online.vivia.features.users.lessor.services.ILessorService;
 import aleosh.online.vivia.features.users.lessor.services.mappers.LessorMapper;
 import aleosh.online.vivia.features.users.users.domain.exceptions.BiometricException;
@@ -351,6 +353,15 @@ public class LessorServiceImpl implements ILessorService {
         } catch (Exception e) {
             throw new BiometricException("Error en verificación de registro biométrico: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @Override
+    @Transactional
+    public void updatePhoneNumber(UUID lessorId, UpdateLessorPhoneRequestDto dto) {
+        if (!lessorRepository.existsById(lessorId)) {
+            throw new LessorNotFoundException("Lessor " + lessorId + " no encontrado.");
+        }
+        lessorRepository.updatePhoneNumber(lessorId, dto.getPhoneNumber());
     }
 
     // Clase interna para almacenar datos temporales de registro

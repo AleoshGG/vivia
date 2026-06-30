@@ -5,11 +5,14 @@ import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLesso
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorBiometricVerifyDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorGoogleDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.UpdateLessorPhoneRequestDto;
+
+import java.util.UUID;
 
 public interface ILessorService {
     AuthResponseDto registerWithPassword(RegisterLessorPasswordDto request);
     AuthResponseDto registerWithGoogleAccount(RegisterLessorGoogleDto request);
-
     String startBiometricRegistration(RegisterLessorBiometricChallengeDto dto);
     AuthResponseDto finishBiometricRegistration(RegisterLessorBiometricVerifyDto dto);
+    void updatePhoneNumber(UUID lessorId, UpdateLessorPhoneRequestDto dto);
 }

@@ -26,10 +26,12 @@ import com.yubico.webauthn.data.AuthenticatorAssertionResponse;
 import com.yubico.webauthn.data.ClientAssertionExtensionOutputs;
 import com.yubico.webauthn.data.PublicKeyCredential;
 import aleosh.online.vivia.features.auth.data.dtos.request.RefreshTokenRequestDto;
+import aleosh.online.vivia.features.auth.data.dtos.request.UpdatePasswordRequestDto;
 import aleosh.online.vivia.features.auth.data.models.RefreshTokenData;
 import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
 import aleosh.online.vivia.features.auth.domain.exceptions.AuthException;
 import aleosh.online.vivia.features.auth.domain.exceptions.InvalidChallengeException;
+import aleosh.online.vivia.features.auth.domain.exceptions.InvalidCredentialException;
 import aleosh.online.vivia.core.exceptions.DomainException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,10 +40,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
@@ -56,6 +60,7 @@ public class AuthServiceImpl implements IAuthService {
     private final WebAuthnCredentialRepository webAuthnCredentialRepository;
     private final UserRepository userRepository;
     private final RedisLoginCacheRepository redisLoginCacheRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthServiceImpl(
             JwtProvider jwtProvider,
@@ -67,7 +72,8 @@ public class AuthServiceImpl implements IAuthService {
             CredentialRepository credentialRepository,
             WebAuthnCredentialRepository webAuthnCredentialRepository,
             UserRepository userRepository,
-            RedisLoginCacheRepository redisLoginCacheRepository
+            RedisLoginCacheRepository redisLoginCacheRepository,
+            PasswordEncoder passwordEncoder
     ) {
         this.jwtProvider = jwtProvider;
         this.relyingParty = relyingParty;
@@ -79,6 +85,7 @@ public class AuthServiceImpl implements IAuthService {
         this.webAuthnCredentialRepository = webAuthnCredentialRepository;
         this.userRepository = userRepository;
         this.redisLoginCacheRepository = redisLoginCacheRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -266,6 +273,16 @@ public class AuthServiceImpl implements IAuthService {
         String refreshToken = refreshTokenServiceImpl.createRefreshToken(email, roleFromDB);
 
         return new AuthResponseDto(jwt, refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void updatePassword(UUID userId, UpdatePasswordRequestDto dto) {
+        CredentialEntity credential = credentialRepository
+                .findByUser_IdAndCredentialType(userId, CredentialType.PASSWORD)
+                .orElseThrow(() -> new InvalidCredentialException("Este usuario no tiene contraseña configurada."));
+        credential.setSecretData(passwordEncoder.encode(dto.getPassword()));
+        credentialRepository.save(credential);
     }
 
     @Override

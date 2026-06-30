@@ -12,6 +12,8 @@ import java.util.UUID;
 public interface CredentialRepository extends JpaRepository<CredentialEntity, UUID> {
     Optional<CredentialEntity> findByUserEmailAndCredentialType(String email, CredentialType type);
 
+    Optional<CredentialEntity> findByUser_IdAndCredentialType(UUID userId, CredentialType credentialType);
+
     @Query("""
         SELECT c FROM CredentialEntity c
         JOIN FETCH c.user u
