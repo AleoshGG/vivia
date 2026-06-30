@@ -1,6 +1,7 @@
 package aleosh.online.vivia.core.config.security;
 
 import aleosh.online.vivia.core.config.jwt.JwtTokenFilter;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -36,6 +37,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         .requestMatchers(HttpMethod.POST, "/lessors/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/lessees/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login/**", "/auth/login", "/auth/refresh").permitAll()
