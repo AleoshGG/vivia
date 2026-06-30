@@ -1,5 +1,6 @@
 package aleosh.online.vivia.features.users.lessor.data.entities;
 
+import aleosh.online.vivia.features.users.lessor.domain.objectvalues.VerificationStatus;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,5 +31,10 @@ public class LessorEntity {
 
     @Column(name = "phone_number", nullable = false, length = 15)
     private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "verification_status", nullable = false, length = 20)
+    @Builder.Default
+    private VerificationStatus verificationStatus = VerificationStatus.UNVERIFIED;
 
 }

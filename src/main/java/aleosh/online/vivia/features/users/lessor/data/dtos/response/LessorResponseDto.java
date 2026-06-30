@@ -26,4 +26,11 @@ public class LessorResponseDto {
 
     @Schema(description = "Número de teléfono", example = "5564234321")
     private String phoneNumber;
+
+    @Schema(
+            description = "Estado de verificación de identidad del arrendador",
+            example = "UNVERIFIED",
+            allowableValues = {"UNVERIFIED", "PENDING_REVIEW", "VERIFIED", "REJECTED"}
+    )
+    private String verificationStatus;
 }

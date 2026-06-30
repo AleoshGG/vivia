@@ -9,11 +9,11 @@ public class LessorMapper {
     public Lessor toDomain(LessorEntity lessorEntity) {
         if (lessorEntity == null) { return null; }
 
-        Lessor.Builder builder = Lessor.builder()
+        return Lessor.builder()
                 .id(lessorEntity.getId())
-                .phoneNumber(lessorEntity.getPhoneNumber());
-
-        return  builder.build();
+                .phoneNumber(lessorEntity.getPhoneNumber())
+                .verificationStatus(lessorEntity.getVerificationStatus())
+                .build();
     }
 
     public LessorEntity toEntity(Lessor lessor) {
@@ -22,8 +22,8 @@ public class LessorMapper {
         LessorEntity lessorEntity = new LessorEntity();
         lessorEntity.setId(lessor.getId());
         lessorEntity.setPhoneNumber(lessor.getPhoneNumber());
+        lessorEntity.setVerificationStatus(lessor.getVerificationStatus());
 
         return lessorEntity;
     }
-
 }
