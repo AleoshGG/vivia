@@ -2,18 +2,22 @@ package aleosh.online.vivia.features.properties.likes.data.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import org.hibernate.annotations.JdbcTypeCode;
 
 import java.io.Serializable;
+import java.sql.Types;
 import java.util.Objects;
 import java.util.UUID;
 
 @Embeddable
 public class PropertyLikeId implements Serializable {
 
-    @Column(name = "user_id")
+    @JdbcTypeCode(Types.VARCHAR)
+    @Column(name = "user_id", length = 50)
     private UUID userId;
 
-    @Column(name = "property_id")
+    @JdbcTypeCode(Types.VARCHAR)
+    @Column(name = "property_id", length = 50)
     private UUID propertyId;
 
     public PropertyLikeId() {}
