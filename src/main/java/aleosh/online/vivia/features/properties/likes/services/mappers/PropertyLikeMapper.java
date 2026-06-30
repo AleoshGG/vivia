@@ -8,23 +8,22 @@ import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 @Component
 public class PropertyLikeMapper {
 
     public PropertyLike toDomain(PropertyLikeEntity entity) {
         return PropertyLike.builder()
-                .userId(UUID.fromString(entity.getId().getUserId()))
-                .propertyId(UUID.fromString(entity.getId().getPropertyId()))
+                .userId(entity.getId().getUserId())
+                .propertyId(entity.getId().getPropertyId())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }
 
     public PropertyLikeEntity toEntity(PropertyLike domain) {
         PropertyLikeId id = new PropertyLikeId(
-                domain.getUserId().toString(),
-                domain.getPropertyId().toString()
+                domain.getUserId(),
+                domain.getPropertyId()
         );
 
         UserEntity user = new UserEntity();

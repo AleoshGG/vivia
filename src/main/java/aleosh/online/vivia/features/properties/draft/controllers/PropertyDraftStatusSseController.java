@@ -45,10 +45,27 @@ public class PropertyDraftStatusSseController {
     }
 
     @Operation(
-            summary = "Stream de estado del draft",
-            description = "Abre una conexión SSE que emite eventos en tiempo real cada vez que el " +
-                    "estado del draft cambia. El cliente debe reconectarse si la conexión se interrumpe. " +
-                    "Requiere autenticación como lessor.",
+            summary = "Stream de resultado de publicación del draft",
+            description = """
+                    Abre una conexión SSE que notifica al lessor el resultado final del proceso de validación de su draft.
+                    La conexión se cierra automáticamente al recibir un evento terminal.
+
+                    **Eventos emitidos:**
+
+                    `status_update` — estado intermedio durante el pipeline de validación.
+                    Ejemplo de data:
+                    `{"draftId":"a3f8c1d2-4b56-7890-abcd-ef1234567890","status":"ANOMALY_VALIDATION_PENDING","updatedAt":"2026-06-30T01:40:49.802Z"}`
+
+                    `publication_success` — la propiedad fue publicada exitosamente. La conexión se cierra tras este evento.
+                    Ejemplo de data:
+                    `{"id":"a3f8c1d2-4b56-7890-abcd-ef1234567890","mainImageUrl":"https://vivia-bucket.s3.us-east-1.amazonaws.com/media/public/a3f8c1d2/portada.jpg","title":"Departamento moderno en Polanco con balcón","listedPrice":18500.00,"areaM2":85.50,"bedrooms":2,"bathrooms":1.5,"propertyTypeName":"Departamento"}`
+
+                    `publication_failed` — la propiedad fue rechazada por la IA. La conexión se cierra tras este evento.
+                    Ejemplo de data:
+                    `{"draftId":"a3f8c1d2-4b56-7890-abcd-ef1234567890","status":"CONTENT_REJECTED","reason":"Las imágenes contienen marcas de agua o logotipos de terceros que no están permitidos."}`
+
+                    El cliente debe reconectarse si la conexión se interrumpe antes de recibir un evento terminal.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @GetMapping(value = "/{draftId}/status/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

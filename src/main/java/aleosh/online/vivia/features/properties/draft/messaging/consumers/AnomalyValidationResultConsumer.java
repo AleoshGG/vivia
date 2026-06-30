@@ -1,6 +1,9 @@
 package aleosh.online.vivia.features.properties.draft.messaging.consumers;
 
 import aleosh.online.vivia.core.config.messaging.RabbitMQConfig;
+import aleosh.online.vivia.features.properties.draft.controllers.DraftSsePublisher;
+import aleosh.online.vivia.features.properties.draft.data.dtos.response.PublicationFailedSseDto;
+import aleosh.online.vivia.features.properties.draft.data.dtos.response.PublishedPropertySseDto;
 import aleosh.online.vivia.features.properties.draft.domain.entities.PropertyDraft;
 import aleosh.online.vivia.features.properties.draft.domain.repositories.IPropertyDraftRepository;
 import aleosh.online.vivia.features.properties.draft.messaging.events.AnomalyValidationResultEvent;
@@ -27,19 +30,22 @@ public class AnomalyValidationResultConsumer {
     private final IAnalysisStorageService analysisStorageService;
     private final IMediaStorageService mediaStorageService;
     private final NotificationPublisher notificationPublisher;
+    private final DraftSsePublisher draftSsePublisher;
 
     public AnomalyValidationResultConsumer(
             IPropertyDraftRepository draftRepository,
             IPropertyPublicationService propertyPublicationService,
             IAnalysisStorageService analysisStorageService,
             IMediaStorageService mediaStorageService,
-            NotificationPublisher notificationPublisher
+            NotificationPublisher notificationPublisher,
+            DraftSsePublisher draftSsePublisher
     ) {
         this.draftRepository = draftRepository;
         this.propertyPublicationService = propertyPublicationService;
         this.analysisStorageService = analysisStorageService;
         this.mediaStorageService = mediaStorageService;
         this.notificationPublisher = notificationPublisher;
+        this.draftSsePublisher = draftSsePublisher;
     }
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_ANOMALY_VALIDATION_RESULT)
@@ -67,6 +73,12 @@ public class AnomalyValidationResultConsumer {
 
         draftRepository.updateStatus(draft.getId(), "ANOMALY_REJECTED");
 
+        draftSsePublisher.publishFailure(draft.getId(), PublicationFailedSseDto.builder()
+                .draftId(draft.getId())
+                .status("ANOMALY_REJECTED")
+                .reason(reason)
+                .build());
+
         // Guardar en Firestore ANTES de eliminar (conservar datos para análisis)
         analysisStorageService.saveRejectedDraft(draft, reason);
 
@@ -74,9 +86,9 @@ public class AnomalyValidationResultConsumer {
 
         notificationPublisher.publish(new NotificationEvent(
                 draft.getLessorId(),
-                "Tu propiedad está en revisión",
-                "Hemos detectado algunas irregularidades y la estamos revisando manualmente. " +
-                        "Te notificaremos cuando tengamos una resolución.",
+                "Tu propiedad no pudo ser publicada",
+                "Detectamos una anomalía en los datos de tu propiedad. " +
+                        (reason != null ? reason : ""),
                 Map.of(
                         "draftId", draft.getId().toString(),
                         "status", "ANOMALY_REJECTED"
@@ -91,9 +103,11 @@ public class AnomalyValidationResultConsumer {
 
         mediaStorageService.moveStagingToPublic(draft.getId());
 
-        propertyPublicationService.publish(draft);
+        PublishedPropertySseDto publishedDto = propertyPublicationService.publish(draft);
 
         draftRepository.updateStatus(draft.getId(), "PUBLISHED");
+
+        draftSsePublisher.publishSuccess(draft.getId(), publishedDto);
 
         notificationPublisher.publish(new NotificationEvent(
                 draft.getLessorId(),

@@ -5,12 +5,15 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
 public class SseEmitterRegistry {
+
+    private static final Set<String> TERMINAL_EVENTS = Set.of("publication_success", "publication_failed");
 
     private final Map<UUID, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
@@ -22,18 +25,23 @@ public class SseEmitterRegistry {
         emitter.onError(e -> remove(draftId, emitter));
     }
 
-    public void notifyStatusChange(UUID draftId, String statusPayload) {
+    public void notifyStatusChange(UUID draftId, String eventName, String payload) {
         List<SseEmitter> draftEmitters = emitters.get(draftId);
         if (draftEmitters == null || draftEmitters.isEmpty()) {
             return;
         }
 
+        boolean isTerminal = TERMINAL_EVENTS.contains(eventName);
         List<SseEmitter> dead = new CopyOnWriteArrayList<>();
+
         for (SseEmitter emitter : draftEmitters) {
             try {
                 emitter.send(SseEmitter.event()
-                        .name("status_update")
-                        .data(statusPayload));
+                        .name(eventName)
+                        .data(payload));
+                if (isTerminal) {
+                    emitter.complete();
+                }
             } catch (Exception e) {
                 dead.add(emitter);
             }

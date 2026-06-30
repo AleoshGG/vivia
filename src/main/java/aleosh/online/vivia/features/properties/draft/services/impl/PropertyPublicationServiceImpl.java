@@ -4,6 +4,7 @@ import aleosh.online.vivia.features.address.address.data.entities.AddressEntity;
 import aleosh.online.vivia.features.address.address.data.repositories.AddressRepository;
 import aleosh.online.vivia.features.address.neighborhoods.data.entities.NeighborhoodEntity;
 import aleosh.online.vivia.features.address.neighborhoods.data.repositories.NeighborhoodRepository;
+import aleosh.online.vivia.features.properties.draft.data.dtos.response.PublishedPropertySseDto;
 import aleosh.online.vivia.features.properties.draft.domain.entities.PropertyDraft;
 import aleosh.online.vivia.features.properties.draft.domain.entities.PropertyDraftMedia;
 import aleosh.online.vivia.features.properties.draft.services.IPropertyPublicationService;
@@ -59,7 +60,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
 
     @Override
     @Transactional
-    public void publish(PropertyDraft draft) {
+    public PublishedPropertySseDto publish(PropertyDraft draft) {
         LessorEntity lessor = lessorRepository.getReferenceById(draft.getLessorId());
 
         PropertyTypeEntity propertyType = propertyTypeRepository.getReferenceById(
@@ -110,6 +111,19 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
         property.getMedia().addAll(mediaEntities);
 
         propertyRepository.save(property);
+
+        String mainImageUrl = resolveMainImageUrl(draft);
+
+        return PublishedPropertySseDto.builder()
+                .id(draft.getId())
+                .mainImageUrl(mainImageUrl)
+                .title(draft.getTitle())
+                .listedPrice(draft.getListedPrice())
+                .areaM2(draft.getAreaM2())
+                .bedrooms(draft.getBedrooms())
+                .bathrooms(draft.getBathrooms())
+                .propertyTypeName(draft.getPropertyType().getName())
+                .build();
     }
 
     private List<PropertyMediaEntity> buildMediaEntities(PropertyDraft draft, PropertyEntity property) {
@@ -133,6 +147,17 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
                     .build());
         }
         return entities;
+    }
+
+    private String resolveMainImageUrl(PropertyDraft draft) {
+        if (draft.getMediaFiles() == null) {
+            return null;
+        }
+        return draft.getMediaFiles().values().stream()
+                .filter(m -> m.getContentType() != null && m.getContentType().startsWith("image/"))
+                .findFirst()
+                .map(m -> buildPublicUrl(m.getStorageKey()))
+                .orElse(null);
     }
 
     // stagingKey: media/staging/<draftId>/<fileKey> → public URL: media/public/<draftId>/<fileKey>

@@ -1,6 +1,8 @@
 package aleosh.online.vivia.features.properties.draft.messaging.consumers;
 
 import aleosh.online.vivia.core.config.messaging.RabbitMQConfig;
+import aleosh.online.vivia.features.properties.draft.controllers.DraftSsePublisher;
+import aleosh.online.vivia.features.properties.draft.data.dtos.response.PublicationFailedSseDto;
 import aleosh.online.vivia.features.properties.draft.domain.entities.PropertyDraft;
 import aleosh.online.vivia.features.properties.draft.domain.repositories.IPropertyDraftRepository;
 import aleosh.online.vivia.features.properties.draft.messaging.events.AnomalyValidationSubmitEvent;
@@ -26,17 +28,20 @@ public class ContentValidationResultConsumer {
     private final IMediaStorageService mediaStorageService;
     private final AnomalyValidationPublisher anomalyValidationPublisher;
     private final NotificationPublisher notificationPublisher;
+    private final DraftSsePublisher draftSsePublisher;
 
     public ContentValidationResultConsumer(
             IPropertyDraftRepository draftRepository,
             IMediaStorageService mediaStorageService,
             AnomalyValidationPublisher anomalyValidationPublisher,
-            NotificationPublisher notificationPublisher
+            NotificationPublisher notificationPublisher,
+            DraftSsePublisher draftSsePublisher
     ) {
         this.draftRepository = draftRepository;
         this.mediaStorageService = mediaStorageService;
         this.anomalyValidationPublisher = anomalyValidationPublisher;
         this.notificationPublisher = notificationPublisher;
+        this.draftSsePublisher = draftSsePublisher;
     }
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_CONTENT_VALIDATION_RESULT)
@@ -70,6 +75,18 @@ public class ContentValidationResultConsumer {
         } catch (Exception e) {
             log.error("[MONITOR] event=UPDATE_STATUS_FAILED step=CONTENT_REJECTION draftId={} " +
                     "cause=No se pudo actualizar el estado del draft en Redis error={}",
+                    draft.getId(), e.getMessage());
+        }
+
+        try {
+            draftSsePublisher.publishFailure(draft.getId(), PublicationFailedSseDto.builder()
+                    .draftId(draft.getId())
+                    .status("CONTENT_REJECTED")
+                    .reason(reason)
+                    .build());
+        } catch (Exception e) {
+            log.error("[MONITOR] event=SSE_PUBLISH_FAILED step=CONTENT_REJECTION draftId={} " +
+                    "cause=No se pudo publicar el evento SSE de rechazo error={}",
                     draft.getId(), e.getMessage());
         }
 

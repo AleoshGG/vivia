@@ -5,25 +5,26 @@ import jakarta.persistence.Embeddable;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.UUID;
 
 @Embeddable
 public class PropertyLikeId implements Serializable {
 
     @Column(name = "user_id")
-    private String userId;
+    private UUID userId;
 
     @Column(name = "property_id")
-    private String propertyId;
+    private UUID propertyId;
 
     public PropertyLikeId() {}
 
-    public PropertyLikeId(String userId, String propertyId) {
+    public PropertyLikeId(UUID userId, UUID propertyId) {
         this.userId = userId;
         this.propertyId = propertyId;
     }
 
-    public String getUserId() { return userId; }
-    public String getPropertyId() { return propertyId; }
+    public UUID getUserId() { return userId; }
+    public UUID getPropertyId() { return propertyId; }
 
     @Override
     public boolean equals(Object o) {
