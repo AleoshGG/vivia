@@ -29,17 +29,17 @@ public class PropertyLikeRepositoryAdapter implements IPropertyLikeRepository {
     @Override
     @Transactional
     public void deleteByUserIdAndPropertyId(UUID userId, UUID propertyId) {
-        repository.deleteByIdUserIdAndIdPropertyId(userId.toString(), propertyId.toString());
+        repository.deleteByIdUserIdAndIdPropertyId(userId, propertyId);
     }
 
     @Override
     public boolean existsByUserIdAndPropertyId(UUID userId, UUID propertyId) {
-        return repository.existsByIdUserIdAndIdPropertyId(userId.toString(), propertyId.toString());
+        return repository.existsByIdUserIdAndIdPropertyId(userId, propertyId);
     }
 
     @Override
     public List<PropertyLike> findAllByUserId(UUID userId) {
-        return repository.findAllByIdUserId(userId.toString())
+        return repository.findAllByIdUserId(userId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());

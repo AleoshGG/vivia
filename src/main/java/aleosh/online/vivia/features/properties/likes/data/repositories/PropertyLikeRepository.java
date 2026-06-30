@@ -5,9 +5,10 @@ import aleosh.online.vivia.features.properties.likes.data.entities.PropertyLikeI
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface PropertyLikeRepository extends JpaRepository<PropertyLikeEntity, PropertyLikeId> {
-    boolean existsByIdUserIdAndIdPropertyId(String userId, String propertyId);
-    void deleteByIdUserIdAndIdPropertyId(String userId, String propertyId);
-    List<PropertyLikeEntity> findAllByIdUserId(String userId);
+    boolean existsByIdUserIdAndIdPropertyId(UUID userId, UUID propertyId);
+    void deleteByIdUserIdAndIdPropertyId(UUID userId, UUID propertyId);
+    List<PropertyLikeEntity> findAllByIdUserId(UUID userId);
 }
