@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.users.users.data.entities;
 
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
+import aleosh.online.vivia.features.users.admin.data.entities.AdminEntity;
 import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import jakarta.persistence.*;
@@ -74,6 +75,11 @@ public class UserEntity {
     @ToString.Exclude
     @lombok.EqualsAndHashCode.Exclude
     private LesseeEntity lessee;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
+    private AdminEntity admin;
 
 }
 

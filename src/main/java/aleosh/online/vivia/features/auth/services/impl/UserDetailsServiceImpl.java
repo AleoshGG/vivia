@@ -37,6 +37,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             role = "ROLE_LESSOR";
         } else if (user.getLessee() != null) {
             role = "ROLE_LESSEE";
+        } else if (user.getAdmin() != null) {
+            role = "ROLE_ADMIN";
         }
 
         return new CustomUserDetails(

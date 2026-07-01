@@ -8,6 +8,14 @@ import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLesso
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorBiometricVerifyDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorGoogleDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerificationUploadRequestDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.response.VerificationStatusResponseDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.response.VerificationUploadResponseDto;
+import aleosh.online.vivia.features.users.lessor.data.entities.LessorDocumentEntity;
+import aleosh.online.vivia.features.users.lessor.data.repositories.LessorDocumentRepository;
+import aleosh.online.vivia.features.users.lessor.domain.objectvalues.DocumentType;
+import aleosh.online.vivia.features.users.lessor.domain.objectvalues.VerificationStatus;
+import aleosh.online.vivia.features.users.lessor.services.IVerificationPresignService;
 import aleosh.online.vivia.core.config.jwt.JwtProvider;
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
 import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
@@ -77,6 +85,8 @@ public class LessorServiceImpl implements ILessorService {
     private final RefreshTokenServiceImpl refreshTokenServiceImpl;
     private final GoogleTokenVerifierServiceImpl googleTokenVerifierService;
     private final WebAuthnCredentialRepository webAuthnCredentialRepository;
+    private final IVerificationPresignService verificationPresignService;
+    private final LessorDocumentRepository lessorDocumentRepository;
 
     // Caché temporal para almacenar datos de registro biométrico
     private final Map<String, BiometricRegistrationData> registrationCache = new ConcurrentHashMap<>();
@@ -92,7 +102,9 @@ public class LessorServiceImpl implements ILessorService {
             JwtProvider jwtProvider,
             RefreshTokenServiceImpl refreshTokenServiceImpl,
             GoogleTokenVerifierServiceImpl googleTokenVerifierService,
-            WebAuthnCredentialRepository webAuthnCredentialRepository
+            WebAuthnCredentialRepository webAuthnCredentialRepository,
+            IVerificationPresignService verificationPresignService,
+            LessorDocumentRepository lessorDocumentRepository
     ) {
         this.lessorRepository = lessorRepository;
         this.userDomainRepository = userDomainRepository;
@@ -105,6 +117,8 @@ public class LessorServiceImpl implements ILessorService {
         this.refreshTokenServiceImpl = refreshTokenServiceImpl;
         this.googleTokenVerifierService = googleTokenVerifierService;
         this.webAuthnCredentialRepository = webAuthnCredentialRepository;
+        this.verificationPresignService = verificationPresignService;
+        this.lessorDocumentRepository = lessorDocumentRepository;
     }
 
     @Override
@@ -362,6 +376,48 @@ public class LessorServiceImpl implements ILessorService {
             throw new LessorNotFoundException("Lessor " + lessorId + " no encontrado.");
         }
         lessorRepository.updatePhoneNumber(lessorId, dto.getPhoneNumber());
+    }
+
+    @Override
+    @Transactional
+    public VerificationUploadResponseDto requestVerificationUpload(UUID lessorId, VerificationUploadRequestDto dto) {
+        if (!lessorRepository.existsById(lessorId)) {
+            throw new LessorNotFoundException("Lessor " + lessorId + " no encontrado.");
+        }
+        lessorRepository.updateVerificationStatus(lessorId, VerificationStatus.PENDING_REVIEW);
+        return verificationPresignService.generateUploadUrls(lessorId, dto);
+    }
+
+    @Override
+    @Transactional
+    public void saveVerificationDocument(UUID lessorId, DocumentType documentType, String publicUrl) {
+        LessorEntity lessor = lessorRepository.findById(lessorId)
+                .orElseThrow(() -> new LessorNotFoundException("Lessor " + lessorId + " no encontrado."));
+
+        LessorDocumentEntity document = LessorDocumentEntity.builder()
+                .lessor(lessor)
+                .documentType(documentType)
+                .uri(publicUrl)
+                .build();
+
+        lessorDocumentRepository.save(document);
+    }
+
+    @Override
+    public VerificationStatusResponseDto getVerificationStatus(UUID lessorId) {
+        LessorEntity lessor = lessorRepository.findById(lessorId)
+                .orElseThrow(() -> new LessorNotFoundException("Lessor " + lessorId + " no encontrado."));
+        return new VerificationStatusResponseDto(lessor.getVerificationStatus().name());
+    }
+
+    @Override
+    @Transactional
+    public void resetVerificationStatus(UUID lessorId) {
+        if (!lessorRepository.existsById(lessorId)) {
+            throw new LessorNotFoundException("Lessor " + lessorId + " no encontrado.");
+        }
+        lessorDocumentRepository.deleteByLessorId(lessorId);
+        lessorRepository.updateVerificationStatus(lessorId, VerificationStatus.UNVERIFIED);
     }
 
     // Clase interna para almacenar datos temporales de registro

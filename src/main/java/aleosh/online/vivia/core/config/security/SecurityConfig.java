@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         // Webhooks internos: autenticados por firma del servicio externo, no por JWT
                         .requestMatchers("/internal/**").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 // Eliminada la línea problemática: .authenticationProvider(...)
