@@ -15,6 +15,8 @@ import aleosh.online.vivia.features.users.lessor.data.repositories.LessorReposit
 import aleosh.online.vivia.features.users.lessor.data.repositories.VerificationRejectionRepository;
 import aleosh.online.vivia.features.users.lessor.domain.exceptions.LessorNotFoundException;
 import aleosh.online.vivia.features.users.lessor.domain.objectvalues.VerificationStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class AdminVerificationServiceImpl implements IAdminVerificationService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminVerificationServiceImpl.class);
 
     private final LessorRepository lessorRepository;
     private final LessorDocumentRepository lessorDocumentRepository;
