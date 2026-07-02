@@ -2,7 +2,7 @@ package aleosh.online.vivia.features.users.admin.controllers;
 
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.users.admin.data.dtos.request.AdminUpdateVerificationRequestDto;
-import aleosh.online.vivia.features.users.admin.data.dtos.response.LessorDocumentResponseDto;
+import aleosh.online.vivia.features.users.admin.data.dtos.response.LessorVerificationDetailDto;
 import aleosh.online.vivia.features.users.admin.data.dtos.response.LessorVerificationSummaryDto;
 import aleosh.online.vivia.features.users.admin.services.IAdminVerificationService;
 import aleosh.online.vivia.features.users.lessor.domain.objectvalues.VerificationStatus;
@@ -41,15 +41,16 @@ public class AdminVerificationController {
         return new BaseResponse<>(true, result, "Arrendadores obtenidos", HttpStatus.OK).buildResponseEntity();
     }
 
-    @Operation(summary = "Ver documentos de identidad de un arrendador", security = @SecurityRequirement(name = "bearerAuth"))
-    @ApiResponse(responseCode = "200", description = "Documentos obtenidos exitosamente.")
+    @Operation(summary = "Ver detalle completo y documentos de identidad de un arrendador",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponse(responseCode = "200", description = "Detalle obtenido exitosamente.")
     @ApiResponse(responseCode = "404", description = "Arrendador no encontrado.")
     @GetMapping("/{id}/documents")
-    public ResponseEntity<BaseResponse<List<LessorDocumentResponseDto>>> getLessorDocuments(
+    public ResponseEntity<BaseResponse<LessorVerificationDetailDto>> getLessorDocuments(
             @PathVariable UUID id
     ) {
-        List<LessorDocumentResponseDto> result = adminVerificationService.getLessorDocuments(id);
-        return new BaseResponse<>(true, result, "Documentos obtenidos", HttpStatus.OK).buildResponseEntity();
+        LessorVerificationDetailDto result = adminVerificationService.getLessorDocuments(id);
+        return new BaseResponse<>(true, result, "Detalle del arrendador obtenido", HttpStatus.OK).buildResponseEntity();
     }
 
     @Operation(summary = "Aprobar o rechazar la verificación de un arrendador", security = @SecurityRequirement(name = "bearerAuth"))

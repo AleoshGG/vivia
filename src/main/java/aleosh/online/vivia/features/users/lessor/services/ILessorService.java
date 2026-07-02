@@ -21,6 +21,7 @@ public interface ILessorService {
     void updatePhoneNumber(UUID lessorId, UpdateLessorPhoneRequestDto dto);
     VerificationUploadResponseDto requestVerificationUpload(UUID lessorId, VerificationUploadRequestDto dto);
     void saveVerificationDocument(UUID lessorId, DocumentType documentType, String publicUrl);
+    boolean allVerificationDocumentsUploaded(UUID lessorId);
     VerificationStatusResponseDto getVerificationStatus(UUID lessorId);
     void resetVerificationStatus(UUID lessorId);
 }

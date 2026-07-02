@@ -14,15 +14,15 @@ import java.util.UUID;
 @AllArgsConstructor
 public class LessorDocumentResponseDto {
 
-    @Schema(description = "ID del documento", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+    @Schema(description = "ID del documento")
     private UUID id;
 
-    @Schema(description = "Tipo de documento", example = "FRONT")
+    @Schema(description = "Tipo de documento: INE_FRONT, INE_BACK o SELFIE")
     private String documentType;
 
-    @Schema(description = "URL pública del documento en S3", example = "https://vivia-bucket.s3.us-east-1.amazonaws.com/verifications/550e8400/FRONT")
+    @Schema(description = "URL pública del documento en S3")
     private String uri;
 
-    @Schema(description = "Fecha de carga", example = "2026-06-30T10:15:00Z")
+    @Schema(description = "Fecha de carga del documento")
     private OffsetDateTime uploadedAt;
 }

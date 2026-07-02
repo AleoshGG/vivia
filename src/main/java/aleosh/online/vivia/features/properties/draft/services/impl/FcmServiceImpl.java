@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 @ConditionalOnProperty(name = "fcm.enabled", havingValue = "true")
 public class FcmServiceImpl implements IFcmService {
@@ -35,6 +37,28 @@ public class FcmServiceImpl implements IFcmService {
 
         } catch (Exception e) {
             log.error("Error enviando FCM a userId={}: {}", event.getUserId(), e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void sendToTopic(String topic, String title, String body, Map<String, String> data) {
+        try {
+            Message.Builder builder = Message.builder()
+                    .setTopic(topic)
+                    .setNotification(Notification.builder()
+                            .setTitle(title)
+                            .setBody(body)
+                            .build());
+
+            if (data != null) {
+                builder.putAllData(data);
+            }
+
+            String messageId = FirebaseMessaging.getInstance().send(builder.build());
+            log.debug("FCM topic enviado a topic={}: messageId={}", topic, messageId);
+
+        } catch (Exception e) {
+            log.error("Error enviando FCM a topic={}: {}", topic, e.getMessage(), e);
         }
     }
 }

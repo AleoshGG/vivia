@@ -1,5 +1,7 @@
 package aleosh.online.vivia.features.users.lessor.controllers;
 
+import aleosh.online.vivia.features.properties.draft.services.IFcmService;
+import aleosh.online.vivia.features.users.admin.controllers.VerificationSsePublisher;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerificationDocumentWebhookDto;
 import aleosh.online.vivia.features.users.lessor.domain.objectvalues.DocumentType;
 import aleosh.online.vivia.features.users.lessor.services.ILessorService;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -23,17 +26,23 @@ public class VerificationWebhookController {
     private static final Logger log = LoggerFactory.getLogger(VerificationWebhookController.class);
 
     private final ILessorService lessorService;
+    private final VerificationSsePublisher verificationSsePublisher;
+    private final IFcmService fcmService;
     private final String internalApiKey;
     private final String bucket;
     private final String region;
 
     public VerificationWebhookController(
             ILessorService lessorService,
+            VerificationSsePublisher verificationSsePublisher,
+            IFcmService fcmService,
             @Value("${vivia.internal.api-key}") String internalApiKey,
             @Value("${aws.s3.bucket}") String bucket,
             @Value("${aws.region}") String region
     ) {
         this.lessorService = lessorService;
+        this.verificationSsePublisher = verificationSsePublisher;
+        this.fcmService = fcmService;
         this.internalApiKey = internalApiKey;
         this.bucket = bucket;
         this.region = region;
@@ -82,6 +91,16 @@ public class VerificationWebhookController {
         String publicUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + body.getKey();
         log.info("[VERIFICATION-WEBHOOK] Guardando documento {} para lessor {}: {}", documentType, lessorId, publicUrl);
         lessorService.saveVerificationDocument(lessorId, documentType, publicUrl);
+
+        if (lessorService.allVerificationDocumentsUploaded(lessorId)) {
+            verificationSsePublisher.publish(lessorId);
+            fcmService.sendToTopic(
+                    "admin-verifications",
+                    "Nuevo documento pendiente",
+                    "Un arrendador subió sus documentos de identidad.",
+                    Map.of("type", "VERIFICATION_DOCUMENTS_RECEIVED")
+            );
+        }
 
         return ResponseEntity.ok().build();
     }

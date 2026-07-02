@@ -5,23 +5,27 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Schema(description = "Resumen de un arrendador pendiente de revisión")
+@Schema(description = "Resumen de un arrendador en la lista de revisión de identidad")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class LessorVerificationSummaryDto {
 
-    @Schema(description = "ID del arrendador", example = "550e8400-e29b-41d4-a716-446655440000")
+    @Schema(description = "ID del arrendador")
     private UUID lessorId;
 
-    @Schema(description = "Nombre completo", example = "Carlos Gómez")
+    @Schema(description = "Nombre completo del arrendador")
     private String name;
 
-    @Schema(description = "Correo electrónico", example = "carlos@gmail.com")
+    @Schema(description = "Correo electrónico del arrendador")
     private String email;
 
-    @Schema(description = "Estado de verificación", example = "PENDING_REVIEW")
+    @Schema(description = "Estado de verificación actual")
     private String verificationStatus;
+
+    @Schema(description = "Fecha del último documento subido")
+    private OffsetDateTime lastUploadedAt;
 }

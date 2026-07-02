@@ -9,10 +9,12 @@ import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLesso
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorGoogleDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.RegisterLessorPasswordDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerificationUploadRequestDto;
+import aleosh.online.vivia.features.users.lessor.data.dtos.response.VerificationRejectionResponseDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.response.VerificationStatusResponseDto;
 import aleosh.online.vivia.features.users.lessor.data.dtos.response.VerificationUploadResponseDto;
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorDocumentEntity;
 import aleosh.online.vivia.features.users.lessor.data.repositories.LessorDocumentRepository;
+import aleosh.online.vivia.features.users.lessor.data.repositories.VerificationRejectionRepository;
 import aleosh.online.vivia.features.users.lessor.domain.objectvalues.DocumentType;
 import aleosh.online.vivia.features.users.lessor.domain.objectvalues.VerificationStatus;
 import aleosh.online.vivia.features.users.lessor.services.IVerificationPresignService;
@@ -87,6 +89,7 @@ public class LessorServiceImpl implements ILessorService {
     private final WebAuthnCredentialRepository webAuthnCredentialRepository;
     private final IVerificationPresignService verificationPresignService;
     private final LessorDocumentRepository lessorDocumentRepository;
+    private final VerificationRejectionRepository verificationRejectionRepository;
 
     // Caché temporal para almacenar datos de registro biométrico
     private final Map<String, BiometricRegistrationData> registrationCache = new ConcurrentHashMap<>();
@@ -104,7 +107,8 @@ public class LessorServiceImpl implements ILessorService {
             GoogleTokenVerifierServiceImpl googleTokenVerifierService,
             WebAuthnCredentialRepository webAuthnCredentialRepository,
             IVerificationPresignService verificationPresignService,
-            LessorDocumentRepository lessorDocumentRepository
+            LessorDocumentRepository lessorDocumentRepository,
+            VerificationRejectionRepository verificationRejectionRepository
     ) {
         this.lessorRepository = lessorRepository;
         this.userDomainRepository = userDomainRepository;
@@ -119,6 +123,7 @@ public class LessorServiceImpl implements ILessorService {
         this.webAuthnCredentialRepository = webAuthnCredentialRepository;
         this.verificationPresignService = verificationPresignService;
         this.lessorDocumentRepository = lessorDocumentRepository;
+        this.verificationRejectionRepository = verificationRejectionRepository;
     }
 
     @Override
@@ -404,10 +409,22 @@ public class LessorServiceImpl implements ILessorService {
     }
 
     @Override
+    public boolean allVerificationDocumentsUploaded(UUID lessorId) {
+        long distinctTypes = lessorDocumentRepository.countDistinctDocumentTypesByLessorId(lessorId);
+        return distinctTypes >= DocumentType.values().length;
+    }
+
+    @Override
     public VerificationStatusResponseDto getVerificationStatus(UUID lessorId) {
         LessorEntity lessor = lessorRepository.findById(lessorId)
                 .orElseThrow(() -> new LessorNotFoundException("Lessor " + lessorId + " no encontrado."));
-        return new VerificationStatusResponseDto(lessor.getVerificationStatus().name());
+
+        VerificationRejectionResponseDto rejection = verificationRejectionRepository
+                .findByLessor_Id(lessorId)
+                .map(r -> new VerificationRejectionResponseDto(r.getComment(), r.getReasons(), r.getCreatedAt()))
+                .orElse(null);
+
+        return new VerificationStatusResponseDto(lessor.getVerificationStatus().name(), rejection);
     }
 
     @Override
