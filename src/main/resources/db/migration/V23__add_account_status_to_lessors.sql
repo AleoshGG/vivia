@@ -1,0 +1,2 @@
+ALTER TABLE lessors
+    ADD COLUMN account_status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE';

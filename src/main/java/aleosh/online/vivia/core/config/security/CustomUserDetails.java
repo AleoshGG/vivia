@@ -1,6 +1,5 @@
 package aleosh.online.vivia.core.config.security;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -9,13 +8,27 @@ import java.util.Collection;
 import java.util.UUID;
 
 @Getter
-@AllArgsConstructor
 public class CustomUserDetails implements UserDetails {
 
     private final UUID userId;
     private final String username;
     private final String password;
     private final Collection<? extends GrantedAuthority> authorities;
+    private final boolean accountNonLocked;
+
+    public CustomUserDetails(UUID userId, String username, String password,
+                             Collection<? extends GrantedAuthority> authorities) {
+        this(userId, username, password, authorities, true);
+    }
+
+    public CustomUserDetails(UUID userId, String username, String password,
+                             Collection<? extends GrantedAuthority> authorities, boolean accountNonLocked) {
+        this.userId = userId;
+        this.username = username;
+        this.password = password;
+        this.authorities = authorities;
+        this.accountNonLocked = accountNonLocked;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -39,7 +52,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return accountNonLocked;
     }
 
     @Override

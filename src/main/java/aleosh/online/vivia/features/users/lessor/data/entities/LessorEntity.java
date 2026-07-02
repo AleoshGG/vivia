@@ -37,4 +37,8 @@ public class LessorEntity {
     @Builder.Default
     private VerificationStatus verificationStatus = VerificationStatus.UNVERIFIED;
 
+    @Column(name = "account_status", nullable = false, length = 50)
+    @Builder.Default
+    private String accountStatus = "ACTIVE";
+
 }

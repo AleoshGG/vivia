@@ -4,6 +4,7 @@ import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
 import aleosh.online.vivia.features.auth.data.repositories.CredentialRepository;
 import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
+import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,9 +33,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         UserEntity user = credential.getUser();
         String role = "ROLE_USER";
+        boolean accountNonLocked = true;
 
         if (user.getLessor() != null) {
             role = "ROLE_LESSOR";
+            LessorEntity lessor = user.getLessor();
+            if ("SUSPENDED".equals(lessor.getAccountStatus())) {
+                accountNonLocked = false;
+            }
         } else if (user.getLessee() != null) {
             role = "ROLE_LESSEE";
         } else if (user.getAdmin() != null) {
@@ -45,7 +51,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 user.getId(),
                 user.getEmail(),
                 credential.getSecretData(),
-                Collections.singletonList(new SimpleGrantedAuthority(role))
+                Collections.singletonList(new SimpleGrantedAuthority(role)),
+                accountNonLocked
         );
     }
 
