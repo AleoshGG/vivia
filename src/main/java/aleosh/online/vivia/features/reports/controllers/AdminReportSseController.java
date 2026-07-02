@@ -1,6 +1,10 @@
 package aleosh.online.vivia.features.reports.controllers;
 
+import aleosh.online.vivia.features.reports.data.dtos.response.PropertyReportSummaryDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
@@ -24,8 +28,13 @@ public class AdminReportSseController {
 
     @Operation(
             summary = "Stream SSE de nuevos reportes",
-            description = "El panel admin se suscribe aquí para recibir en tiempo real cada nuevo reporte de LESSEE.",
+            description = "Conexión SSE; emite el evento `report_new` con un objeto `PropertyReportSummaryDto` cada vez que un arrendatario crea un reporte.",
             security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Evento SSE `report_new` emitido por cada nuevo reporte recibido.",
+            content = @Content(schema = @Schema(implementation = PropertyReportSummaryDto.class))
     )
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream() {
