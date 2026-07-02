@@ -14,6 +14,7 @@ public interface IAuthService {
     String startLogin(BiometricLoginChallengeDto dto);
     AuthResponseDto finishLogin(VerifyLoginDto verifyDto);
     AuthResponseDto traditionalLogin(LoginRequestDto loginDto);
+    AuthResponseDto adminLogin(LoginRequestDto loginDto);
     AuthResponseDto googleLogin(GoogleLoginRequestDto googleLoginDto);
     AuthResponseDto refreshToken(RefreshTokenRequestDto request);
     void updatePassword(UUID userId, UpdatePasswordRequestDto dto);

@@ -114,6 +114,18 @@ public class AuthController {
         ).buildResponseEntity();
     }
 
+    @Operation(summary = "Inicio de sesión administrador", description = "Autentica un administrador con correo y contraseña. Rechaza credenciales de usuarios no administradores.")
+    @PostMapping(value = "/login/admin", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> adminLogin(
+            @Valid @RequestBody LoginRequestDto loginDto
+    ) {
+        AuthResponseDto authResponseDto = authService.adminLogin(loginDto);
+
+        return new BaseResponse<>(
+                true, authResponseDto, "Administrador logueado correctamente", HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
     @Operation(summary = "Inicio de sesión con Google",
             description = "Autentica un usuario existente usando su cuenta de Google.")
     @PostMapping(value = "/login/google", consumes = "application/json", produces = "application/json")

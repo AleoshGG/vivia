@@ -222,6 +222,27 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     @Transactional
+    public AuthResponseDto adminLogin(LoginRequestDto loginDto) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginDto.getIdentifier(), loginDto.getPassword())
+        );
+
+        String role = authentication.getAuthorities().iterator().next().getAuthority();
+
+        if (!"ROLE_ADMIN".equals(role)) {
+            throw new AuthException("Acceso denegado", HttpStatus.FORBIDDEN);
+        }
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String jwt = jwtProvider.generateToken(authentication);
+        String refreshToken = refreshTokenServiceImpl.createRefreshToken(loginDto.getIdentifier(), role);
+
+        return new AuthResponseDto(jwt, refreshToken);
+    }
+
+    @Override
+    @Transactional
     public AuthResponseDto googleLogin(GoogleLoginRequestDto googleLoginDto) {
         GoogleIdToken.Payload payload = googleTokenVerifierService.verifyIdToken(googleLoginDto.getIdToken());
 
