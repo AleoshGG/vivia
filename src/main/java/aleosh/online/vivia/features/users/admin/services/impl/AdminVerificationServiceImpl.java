@@ -87,21 +87,29 @@ public class AdminVerificationServiceImpl implements IAdminVerificationService {
         }
 
         lessorRepository.updateVerificationStatus(lessorId, newStatus);
+    }
 
-        if (newStatus == VerificationStatus.VERIFIED) {
-            notificationPublisher.publish(new NotificationEvent(
-                    lessorId,
-                    "¡Verificación aprobada!",
-                    "Tu identidad fue verificada. Ya puedes publicar propiedades.",
-                    Map.of("type", "VERIFICATION_STATUS_UPDATED", "status", "VERIFIED")
-            ));
-        } else if (newStatus == VerificationStatus.REJECTED) {
-            notificationPublisher.publish(new NotificationEvent(
-                    lessorId,
-                    "Verificación rechazada",
-                    "Tu identidad no pudo verificarse. Revisa los comentarios del administrador.",
-                    Map.of("type", "VERIFICATION_STATUS_UPDATED", "status", "REJECTED")
-            ));
+    @Override
+    public void notifyLessorStatusChanged(UUID lessorId, VerificationStatus status) {
+        try {
+            if (status == VerificationStatus.VERIFIED) {
+                notificationPublisher.publish(new NotificationEvent(
+                        lessorId,
+                        "¡Verificación aprobada!",
+                        "Tu identidad fue verificada. Ya puedes publicar propiedades.",
+                        Map.of("type", "VERIFICATION_STATUS_UPDATED", "status", "VERIFIED")
+                ));
+            } else if (status == VerificationStatus.REJECTED) {
+                notificationPublisher.publish(new NotificationEvent(
+                        lessorId,
+                        "Verificación rechazada",
+                        "Tu identidad no pudo verificarse. Revisa los comentarios del administrador.",
+                        Map.of("type", "VERIFICATION_STATUS_UPDATED", "status", "REJECTED")
+                ));
+            }
+        } catch (Exception e) {
+            log.error("Error enviando notificación FCM al lessor={} tras cambio de estado {}: {}",
+                    lessorId, status, e.getMessage());
         }
     }
 }

@@ -92,14 +92,18 @@ public class VerificationWebhookController {
         log.info("[VERIFICATION-WEBHOOK] Guardando documento {} para lessor {}: {}", documentType, lessorId, publicUrl);
         lessorService.saveVerificationDocument(lessorId, documentType, publicUrl);
 
-        if (lessorService.allVerificationDocumentsUploaded(lessorId)) {
-            verificationSsePublisher.publish(lessorId);
-            fcmService.sendToTopic(
-                    "admin-verifications",
-                    "Nuevo documento pendiente",
-                    "Un arrendador subió sus documentos de identidad.",
-                    Map.of("type", "VERIFICATION_DOCUMENTS_RECEIVED")
-            );
+        try {
+            if (lessorService.allVerificationDocumentsUploaded(lessorId)) {
+                verificationSsePublisher.publish(lessorId);
+                fcmService.sendToTopic(
+                        "admin-verifications",
+                        "Nuevo documento pendiente",
+                        "Un arrendador subió sus documentos de identidad.",
+                        Map.of("type", "VERIFICATION_DOCUMENTS_RECEIVED")
+                );
+            }
+        } catch (Exception e) {
+            log.error("[VERIFICATION-WEBHOOK] Error enviando notificaciones para lessor={}: {}", lessorId, e.getMessage());
         }
 
         return ResponseEntity.ok().build();

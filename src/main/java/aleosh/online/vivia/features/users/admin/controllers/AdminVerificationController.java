@@ -61,7 +61,9 @@ public class AdminVerificationController {
             @PathVariable UUID id,
             @Valid @RequestBody AdminUpdateVerificationRequestDto dto
     ) {
+        VerificationStatus newStatus = VerificationStatus.valueOf(dto.getVerificationStatus());
         adminVerificationService.updateVerificationStatus(id, dto);
+        adminVerificationService.notifyLessorStatusChanged(id, newStatus);
         return new BaseResponse<Void>(true, null, "Estado de verificación actualizado", HttpStatus.OK).buildResponseEntity();
     }
 }

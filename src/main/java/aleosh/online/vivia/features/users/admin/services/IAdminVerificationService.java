@@ -12,4 +12,5 @@ public interface IAdminVerificationService {
     List<LessorVerificationSummaryDto> getLessorsByStatus(VerificationStatus status);
     LessorVerificationDetailDto getLessorDocuments(UUID lessorId);
     void updateVerificationStatus(UUID lessorId, AdminUpdateVerificationRequestDto dto);
+    void notifyLessorStatusChanged(UUID lessorId, VerificationStatus status);
 }
