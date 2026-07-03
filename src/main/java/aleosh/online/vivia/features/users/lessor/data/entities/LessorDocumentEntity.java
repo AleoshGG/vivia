@@ -19,6 +19,7 @@ import java.util.UUID;
 public class LessorDocumentEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(Types.VARCHAR)
     @Column(name = "id", updatable = false, nullable = false, length = 50)
     private UUID id;
