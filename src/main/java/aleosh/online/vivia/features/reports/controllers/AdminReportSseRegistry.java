@@ -3,8 +3,6 @@ package aleosh.online.vivia.features.reports.controllers;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -21,13 +19,12 @@ public class AdminReportSseRegistry {
     }
 
     public void broadcast(String eventName, String data) {
-        Iterator<SseEmitter> it = emitters.iterator();
-        while (it.hasNext()) {
-            SseEmitter emitter = it.next();
+        for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event().name(eventName).data(data));
-            } catch (IOException e) {
-                it.remove();
+            } catch (Exception e) {
+                // El iterador de CopyOnWriteArrayList no soporta remove(); se remueve sobre la lista
+                emitters.remove(emitter);
             }
         }
     }
