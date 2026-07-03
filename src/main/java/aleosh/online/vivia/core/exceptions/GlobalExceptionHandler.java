@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -116,6 +117,12 @@ public class GlobalExceptionHandler {
                 Collections.emptyList()
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    // Cliente SSE desconectado: la respuesta ya no es usable y el Content-Type
+    // quedó fijado en text/event-stream, por lo que no debe escribirse un ErrorResponse.
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleAsyncRequestNotUsable(AsyncRequestNotUsableException ex) {
     }
 
     @ExceptionHandler(Exception.class)

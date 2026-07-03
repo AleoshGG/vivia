@@ -7,5 +7,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface PropertyMediaRepository extends JpaRepository<PropertyMediaEntity, UUID> {
-    List<PropertyMediaEntity> findAllByProperty_Id(UUID propertyId);
+    List<PropertyMediaEntity> findAllByProperty_IdAndProperty_DeletedAtIsNull(UUID propertyId);
 }

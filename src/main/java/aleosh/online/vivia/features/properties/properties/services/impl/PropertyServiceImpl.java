@@ -120,7 +120,7 @@ public class PropertyServiceImpl implements IPropertyService {
     @Override
     @Transactional(readOnly = true)
     public PropertyDetailResponseDto getDetail(UUID propertyId, UUID userId, boolean isLessee) {
-        PropertyEntity entity = propertyJpaRepository.findById(propertyId)
+        PropertyEntity entity = propertyJpaRepository.findByIdAndDeletedAtIsNull(propertyId)
                 .orElseThrow(() -> new PropertyNotFoundException("Property not found with id: " + propertyId));
 
         boolean liked = isLessee && likeRepository.existsByUserIdAndPropertyId(userId, propertyId);
@@ -131,7 +131,7 @@ public class PropertyServiceImpl implements IPropertyService {
     @Override
     @Transactional(readOnly = true)
     public List<PropertyResponseDto> getAll() {
-        return propertyJpaRepository.findAll().stream()
+        return propertyJpaRepository.findAllByDeletedAtIsNull().stream()
                 .map(mapper::toResponseDtoWithMedia)
                 .collect(Collectors.toList());
     }
@@ -145,7 +145,7 @@ public class PropertyServiceImpl implements IPropertyService {
     @Override
     @Transactional(readOnly = true)
     public PropertyResponseDto getByLessorId(UUID lessorId) {
-        PropertyEntity propertyEntity = propertyJpaRepository.findByLessorId(lessorId)
+        PropertyEntity propertyEntity = propertyJpaRepository.findByLessorIdAndDeletedAtIsNull(lessorId)
                 .orElseThrow(() -> new PropertyNotFoundException("Property not found for lessor id: " + lessorId));
 
         return mapper.toResponseDtoWithMedia(propertyEntity);
@@ -154,7 +154,7 @@ public class PropertyServiceImpl implements IPropertyService {
     @Override
     @Transactional(readOnly = true)
     public List<PropertyMediaResponseDto> getMediaByPropertyId(UUID propertyId) {
-        return propertyMediaRepository.findAllByProperty_Id(propertyId).stream()
+        return propertyMediaRepository.findAllByProperty_IdAndProperty_DeletedAtIsNull(propertyId).stream()
                 .map(m -> PropertyMediaResponseDto.builder()
                         .id(m.getId())
                         .url(m.getUrl())
@@ -167,7 +167,7 @@ public class PropertyServiceImpl implements IPropertyService {
     @Override
     @Transactional(readOnly = true)
     public List<PropertyPreviewResponseDto> getMyProperties(UUID lessorId, Integer limit) {
-        Stream<PropertyPreviewResponseDto> stream = propertyJpaRepository.findAllByLessorId(lessorId)
+        Stream<PropertyPreviewResponseDto> stream = propertyJpaRepository.findAllByLessorIdAndDeletedAtIsNull(lessorId)
                 .stream()
                 .map(mapper::toPreviewDto);
         if (limit != null) {
@@ -179,7 +179,7 @@ public class PropertyServiceImpl implements IPropertyService {
     @Override
     @Transactional(readOnly = true)
     public List<PropertyPreviewResponseDto> getSuggestions(Integer limit) {
-        Stream<PropertyPreviewResponseDto> stream = propertyJpaRepository.findAllByOrderByCreatedAtDesc()
+        Stream<PropertyPreviewResponseDto> stream = propertyJpaRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc()
                 .stream()
                 .map(mapper::toPreviewDto);
         if (limit != null) {

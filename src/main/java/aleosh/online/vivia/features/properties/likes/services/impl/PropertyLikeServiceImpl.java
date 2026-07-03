@@ -52,7 +52,7 @@ public class PropertyLikeServiceImpl implements IPropertyLikeService {
                 .map(PropertyLike::getPropertyId)
                 .collect(Collectors.toList());
 
-        return propertyRepository.findAllById(propertyIds)
+        return propertyRepository.findAllByIdInAndDeletedAtIsNull(propertyIds)
                 .stream()
                 .map(propertyMapper::toPreviewDto)
                 .collect(Collectors.toList());

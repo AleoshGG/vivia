@@ -42,7 +42,7 @@ public class PropertyRepositoryAdapter implements IPropertyRepository {
 
     @Override
     public List<Property> getAll() {
-        List<PropertyEntity> entities = repository.findAll();
+        List<PropertyEntity> entities = repository.findAllByDeletedAtIsNull();
         return entities.stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -58,7 +58,7 @@ public class PropertyRepositoryAdapter implements IPropertyRepository {
 
     @Override
     public Optional<Property> getByLessorId(UUID id) {
-        return repository.findByLessorId(id)
+        return repository.findByLessorIdAndDeletedAtIsNull(id)
                 .map(mapper::toDomain);
     }
 }
