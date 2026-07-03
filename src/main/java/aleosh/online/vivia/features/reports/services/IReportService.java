@@ -4,6 +4,7 @@ import aleosh.online.vivia.features.reports.data.dtos.request.CreateReportReques
 import aleosh.online.vivia.features.reports.data.dtos.request.ReportVerdictRequestDto;
 import aleosh.online.vivia.features.reports.data.dtos.response.PropertyReportDetailDto;
 import aleosh.online.vivia.features.reports.data.dtos.response.PropertyReportSummaryDto;
+import aleosh.online.vivia.features.reports.data.dtos.response.ReportReasonDto;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,4 +15,5 @@ public interface IReportService {
     PropertyReportDetailDto getReportDetail(UUID reportId);
     List<PropertyReportSummaryDto> getHistoryByLessor(UUID lessorId);
     void applyVerdict(UUID reportId, UUID adminId, ReportVerdictRequestDto dto);
+    List<ReportReasonDto> getReasons();
 }

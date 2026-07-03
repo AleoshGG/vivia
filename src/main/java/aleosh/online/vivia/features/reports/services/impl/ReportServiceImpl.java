@@ -9,6 +9,7 @@ import aleosh.online.vivia.features.reports.data.dtos.request.CreateReportReques
 import aleosh.online.vivia.features.reports.data.dtos.request.ReportVerdictRequestDto;
 import aleosh.online.vivia.features.reports.data.dtos.response.PropertyReportDetailDto;
 import aleosh.online.vivia.features.reports.data.dtos.response.PropertyReportSummaryDto;
+import aleosh.online.vivia.features.reports.data.dtos.response.ReportReasonDto;
 import aleosh.online.vivia.features.reports.data.entities.PropertyReportEntity;
 import aleosh.online.vivia.features.reports.data.entities.ReportReasonEntity;
 import aleosh.online.vivia.features.reports.data.repositories.PropertyReportRepository;
@@ -105,6 +106,20 @@ public class ReportServiceImpl implements IReportService {
 
         reportRepository.save(report);
         reportSsePublisher.publish(report);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReportReasonDto> getReasons() {
+        return reasonRepository.findAll().stream()
+                .filter(r -> r.isActive())
+                .map(r -> ReportReasonDto.builder()
+                        .id(r.getId())
+                        .name(r.getName())
+                        .description(r.getDescription())
+                        .priority(r.getPriority())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     @Override

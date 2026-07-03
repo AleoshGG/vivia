@@ -13,8 +13,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReportReasonDto {
 
+    @Schema(description = "Identificador único del motivo", example = "DEPOSIT_OUTSIDE_PLATFORM")
+    private String id;
+
     @Schema(description = "Nombre descriptivo del motivo de reporte", example = "Información falsa")
     private String name;
+
+    @Schema(description = "Descripción detallada del motivo", example = "La publicación contiene información falsa o engañosa.")
+    private String description;
 
     @Schema(description = "Nivel de prioridad del motivo de reporte", example = "HIGH")
     private String priority;

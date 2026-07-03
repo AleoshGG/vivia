@@ -30,7 +30,9 @@ public class ReportMapper {
 
         ReportReasonDto reasonDto = entity.getReason() != null
                 ? ReportReasonDto.builder()
+                    .id(entity.getReason().getId())
                     .name(entity.getReason().getName())
+                    .description(entity.getReason().getDescription())
                     .priority(entity.getReason().getPriority())
                     .build()
                 : null;
@@ -77,7 +79,9 @@ public class ReportMapper {
 
         ReportReasonDto reasonDto = entity.getReason() != null
                 ? ReportReasonDto.builder()
+                    .id(entity.getReason().getId())
                     .name(entity.getReason().getName())
+                    .description(entity.getReason().getDescription())
                     .priority(entity.getReason().getPriority())
                     .build()
                 : null;
