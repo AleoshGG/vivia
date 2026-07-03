@@ -84,8 +84,8 @@ public class ReportServiceImpl implements IReportService {
             throw new IllegalArgumentException("No puedes reportar tu propia propiedad");
         }
 
-        if (reportRepository.existsByPropertyIdAndLesseeId(dto.getPropertyId(), lesseeId)) {
-            throw new ReportAlreadyExistsException("Ya existe un reporte para esta propiedad");
+        if (reportRepository.existsByPropertyIdAndLesseeIdAndIsResolvedFalse(dto.getPropertyId(), lesseeId)) {
+            throw new ReportAlreadyExistsException("Ya existe un reporte pendiente para esta propiedad");
         }
 
         LesseeEntity lessee = lesseeRepository.findById(lesseeId)

@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface PropertyReportRepository extends JpaRepository<PropertyReportEntity, UUID> {
 
-    boolean existsByPropertyIdAndLesseeId(UUID propertyId, UUID lesseeId);
+    boolean existsByPropertyIdAndLesseeIdAndIsResolvedFalse(UUID propertyId, UUID lesseeId);
 
     @Query("SELECT r FROM PropertyReportEntity r WHERE r.isResolved = false ORDER BY r.createdAt DESC")
     List<PropertyReportEntity> findAllPending();
