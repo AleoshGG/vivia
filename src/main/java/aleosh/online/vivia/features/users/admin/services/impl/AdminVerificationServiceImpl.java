@@ -77,8 +77,10 @@ public class AdminVerificationServiceImpl implements IAdminVerificationService {
 
         VerificationStatus newStatus = VerificationStatus.valueOf(dto.getVerificationStatus());
 
-        verificationRejectionRepository.findByLessor_Id(lessorId)
-                .ifPresent(verificationRejectionRepository::delete);
+        verificationRejectionRepository.findByLessor_Id(lessorId).ifPresent(existing -> {
+            verificationRejectionRepository.delete(existing);
+            verificationRejectionRepository.flush();
+        });
 
         if (newStatus == VerificationStatus.REJECTED) {
             VerificationRejectionEntity rejection = VerificationRejectionEntity.builder()

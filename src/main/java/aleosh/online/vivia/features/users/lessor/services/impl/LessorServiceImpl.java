@@ -434,6 +434,10 @@ public class LessorServiceImpl implements ILessorService {
             throw new LessorNotFoundException("Lessor " + lessorId + " no encontrado.");
         }
         lessorDocumentRepository.deleteByLessorId(lessorId);
+        verificationRejectionRepository.findByLessor_Id(lessorId).ifPresent(existing -> {
+            verificationRejectionRepository.delete(existing);
+            verificationRejectionRepository.flush();
+        });
         lessorRepository.updateVerificationStatus(lessorId, VerificationStatus.UNVERIFIED);
     }
 
