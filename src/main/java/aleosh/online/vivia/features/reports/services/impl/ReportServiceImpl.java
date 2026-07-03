@@ -2,9 +2,9 @@ package aleosh.online.vivia.features.reports.services.impl;
 
 import aleosh.online.vivia.features.properties.draft.messaging.events.NotificationEvent;
 import aleosh.online.vivia.features.properties.draft.messaging.publishers.NotificationPublisher;
+import aleosh.online.vivia.features.properties.draft.services.IFcmService;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyEntity;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyRepository;
-import aleosh.online.vivia.features.reports.controllers.ReportSsePublisher;
 import aleosh.online.vivia.features.reports.data.dtos.request.CreateReportRequestDto;
 import aleosh.online.vivia.features.reports.data.dtos.request.ReportVerdictRequestDto;
 import aleosh.online.vivia.features.reports.data.dtos.response.PropertyReportDetailDto;
@@ -45,7 +45,7 @@ public class ReportServiceImpl implements IReportService {
     private final UserRepository userRepository;
     private final ReportMapper reportMapper;
     private final NotificationPublisher notificationPublisher;
-    private final ReportSsePublisher reportSsePublisher;
+    private final IFcmService fcmService;
 
     public ReportServiceImpl(
             PropertyReportRepository reportRepository,
@@ -56,7 +56,7 @@ public class ReportServiceImpl implements IReportService {
             UserRepository userRepository,
             ReportMapper reportMapper,
             NotificationPublisher notificationPublisher,
-            ReportSsePublisher reportSsePublisher
+            IFcmService fcmService
     ) {
         this.reportRepository = reportRepository;
         this.reasonRepository = reasonRepository;
@@ -66,7 +66,7 @@ public class ReportServiceImpl implements IReportService {
         this.userRepository = userRepository;
         this.reportMapper = reportMapper;
         this.notificationPublisher = notificationPublisher;
-        this.reportSsePublisher = reportSsePublisher;
+        this.fcmService = fcmService;
     }
 
     @Override
@@ -105,7 +105,12 @@ public class ReportServiceImpl implements IReportService {
                 .build();
 
         reportRepository.save(report);
-        reportSsePublisher.publish(report);
+        fcmService.sendToTopic(
+                "admin-reports",
+                "Nuevo reporte recibido",
+                "Un arrendatario reportó la publicación \"" + property.getTitle() + "\".",
+                Map.of("type", "REPORT_CREATED", "reportId", report.getId().toString())
+        );
     }
 
     @Override

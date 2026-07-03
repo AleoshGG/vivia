@@ -1,7 +1,6 @@
 package aleosh.online.vivia.features.users.lessor.controllers;
 
 import aleosh.online.vivia.features.properties.draft.services.IFcmService;
-import aleosh.online.vivia.features.users.admin.controllers.VerificationSsePublisher;
 import aleosh.online.vivia.features.users.lessor.data.dtos.request.VerificationDocumentWebhookDto;
 import aleosh.online.vivia.features.users.lessor.domain.objectvalues.DocumentType;
 import aleosh.online.vivia.features.users.lessor.services.ILessorService;
@@ -26,7 +25,6 @@ public class VerificationWebhookController {
     private static final Logger log = LoggerFactory.getLogger(VerificationWebhookController.class);
 
     private final ILessorService lessorService;
-    private final VerificationSsePublisher verificationSsePublisher;
     private final IFcmService fcmService;
     private final String internalApiKey;
     private final String bucket;
@@ -34,14 +32,12 @@ public class VerificationWebhookController {
 
     public VerificationWebhookController(
             ILessorService lessorService,
-            VerificationSsePublisher verificationSsePublisher,
             IFcmService fcmService,
             @Value("${vivia.internal.api-key}") String internalApiKey,
             @Value("${aws.s3.bucket}") String bucket,
             @Value("${aws.region}") String region
     ) {
         this.lessorService = lessorService;
-        this.verificationSsePublisher = verificationSsePublisher;
         this.fcmService = fcmService;
         this.internalApiKey = internalApiKey;
         this.bucket = bucket;
@@ -94,7 +90,6 @@ public class VerificationWebhookController {
 
         try {
             if (lessorService.allVerificationDocumentsUploaded(lessorId)) {
-                verificationSsePublisher.publish(lessorId);
                 fcmService.sendToTopic(
                         "admin-verifications",
                         "Nuevo documento pendiente",
