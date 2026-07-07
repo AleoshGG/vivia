@@ -7,4 +7,6 @@ public interface IContentModerationService {
     boolean moderateImage(String s3Key);
 
     void submitVideoModeration(String s3Key, UUID draftId);
+
+    void submitVideoModeration(String s3Key, String jobTag);
 }

@@ -21,6 +21,11 @@ public class RabbitMQConfig {
     public static final String QUEUE_NOTIFICATION = "vivia.notification.send";
     public static final String QUEUE_DLQ = "vivia.dlq";
 
+    // Property Media Pipeline (medios adicionales en propiedades ya publicadas)
+    public static final String QUEUE_PROPERTY_MEDIA_UPLOADED = "vivia.property-media.file.uploaded";
+    public static final String QUEUE_PROPERTY_MEDIA_VALIDATION_SUBMIT = "vivia.property-media.validation.content.submit";
+    public static final String QUEUE_PROPERTY_MEDIA_VALIDATION_RESULT = "vivia.property-media.validation.content.result";
+
     @Bean
     public TopicExchange propertiesExchange() {
         return ExchangeBuilder.topicExchange(EXCHANGE).durable(true).build();
@@ -107,6 +112,45 @@ public class RabbitMQConfig {
     @Bean
     public Binding notificationBinding(Queue notificationQueue, TopicExchange propertiesExchange) {
         return BindingBuilder.bind(notificationQueue).to(propertiesExchange).with(QUEUE_NOTIFICATION);
+    }
+
+    @Bean
+    public Queue propertyMediaUploadedQueue() {
+        return QueueBuilder.durable(QUEUE_PROPERTY_MEDIA_UPLOADED)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", QUEUE_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue propertyMediaValidationSubmitQueue() {
+        return QueueBuilder.durable(QUEUE_PROPERTY_MEDIA_VALIDATION_SUBMIT)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", QUEUE_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue propertyMediaValidationResultQueue() {
+        return QueueBuilder.durable(QUEUE_PROPERTY_MEDIA_VALIDATION_RESULT)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", QUEUE_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Binding propertyMediaUploadedBinding(Queue propertyMediaUploadedQueue, TopicExchange propertiesExchange) {
+        return BindingBuilder.bind(propertyMediaUploadedQueue).to(propertiesExchange).with(QUEUE_PROPERTY_MEDIA_UPLOADED);
+    }
+
+    @Bean
+    public Binding propertyMediaValidationSubmitBinding(Queue propertyMediaValidationSubmitQueue, TopicExchange propertiesExchange) {
+        return BindingBuilder.bind(propertyMediaValidationSubmitQueue).to(propertiesExchange).with(QUEUE_PROPERTY_MEDIA_VALIDATION_SUBMIT);
+    }
+
+    @Bean
+    public Binding propertyMediaValidationResultBinding(Queue propertyMediaValidationResultQueue, TopicExchange propertiesExchange) {
+        return BindingBuilder.bind(propertyMediaValidationResultQueue).to(propertiesExchange).with(QUEUE_PROPERTY_MEDIA_VALIDATION_RESULT);
     }
 
     @Bean

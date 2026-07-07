@@ -5,6 +5,8 @@ import aleosh.online.vivia.features.address.address.domain.repositories.IAddress
 import aleosh.online.vivia.features.properties.likes.domain.repositories.IPropertyLikeRepository;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.PropertyMediaDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.request.UpdatePropertyDto;
+import aleosh.online.vivia.features.properties.properties.domain.exceptions.PropertyOwnershipException;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyMediaResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -186,5 +189,62 @@ public class PropertyServiceImpl implements IPropertyService {
             stream = stream.limit(limit);
         }
         return stream.collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public PropertyResponseDto update(UUID propertyId, UpdatePropertyDto dto, UUID lessorId) {
+        PropertyEntity entity = propertyJpaRepository.findByIdAndDeletedAtIsNull(propertyId)
+                .orElseThrow(() -> new PropertyNotFoundException("Property not found with id: " + propertyId));
+
+        if (!entity.getLessor().getId().equals(lessorId)) {
+            throw new PropertyOwnershipException("Property does not belong to the authenticated lessor");
+        }
+
+        if (dto.getTitle() != null) {
+            entity.setTitle(dto.getTitle());
+        }
+        if (dto.getDescription() != null) {
+            entity.setDescription(dto.getDescription());
+        }
+        if (dto.getBedrooms() != null) {
+            entity.setBedrooms(dto.getBedrooms());
+        }
+        if (dto.getParkingSpaces() != null) {
+            entity.setParkingSpaces(dto.getParkingSpaces());
+        }
+        if (dto.getConstructionYear() != null) {
+            entity.setConstructionYear(dto.getConstructionYear());
+        }
+        if (dto.getIsCondominium() != null) {
+            entity.setCondominium(dto.getIsCondominium());
+        }
+        if (dto.getIsAvailableToRent() != null) {
+            entity.setAvailableToRent(dto.getIsAvailableToRent());
+        }
+
+        BigDecimal area = dto.getAreaM2() != null ? dto.getAreaM2() : entity.getAreaM2();
+        BigDecimal price = dto.getListedPrice() != null ? dto.getListedPrice() : entity.getListedPrice();
+        BigDecimal bathrooms = dto.getBathrooms() != null ? dto.getBathrooms() : entity.getBathrooms();
+
+        if (dto.getAreaM2() != null) {
+            entity.setAreaM2(area);
+        }
+        if (dto.getListedPrice() != null) {
+            entity.setListedPrice(price);
+        }
+        if (dto.getBathrooms() != null) {
+            entity.setBathrooms(bathrooms);
+        }
+
+        // Recalcular pricePerM2 si cambió precio o área
+        if (dto.getListedPrice() != null || dto.getAreaM2() != null) {
+            if (area.compareTo(BigDecimal.ZERO) > 0) {
+                entity.setPricePerM2(price.divide(area, 2, java.math.RoundingMode.HALF_UP));
+            }
+        }
+
+        PropertyEntity saved = propertyJpaRepository.save(entity);
+        return mapper.toResponseDtoWithMedia(saved);
     }
 }

@@ -63,6 +63,11 @@ public class RekognitionContentModerationServiceImpl implements IContentModerati
 
     @Override
     public void submitVideoModeration(String s3Key, UUID draftId) {
+        submitVideoModeration(s3Key, draftId.toString());
+    }
+
+    @Override
+    public void submitVideoModeration(String s3Key, String jobTag) {
         StartContentModerationResponse response = rekognitionClient.startContentModeration(
                 StartContentModerationRequest.builder()
                         .video(Video.builder()
@@ -75,12 +80,11 @@ public class RekognitionContentModerationServiceImpl implements IContentModerati
                                 .roleArn(snsRoleArn)
                                 .snsTopicArn(snsTopicArn)
                                 .build())
-                        .jobTag(draftId.toString())
+                        .jobTag(jobTag)
                         .minConfidence(confidenceThreshold)
                         .build()
         );
 
-        log.info("[Rekognition] Video {} enviado a análisis async. JobId={}, draftId={}",
-                s3Key, response.jobId(), draftId);
+        log.info("[Rekognition] Video {} enviado a análisis async. JobId={}, jobTag={}", s3Key, response.jobId(), jobTag);
     }
 }

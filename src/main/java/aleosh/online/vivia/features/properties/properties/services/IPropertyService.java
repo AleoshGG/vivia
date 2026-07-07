@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.properties.properties.services;
 
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.request.UpdatePropertyDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyMediaResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
@@ -18,4 +19,5 @@ public interface IPropertyService {
     List<PropertyPreviewResponseDto> getMyProperties(UUID lessorId, Integer limit);
     List<PropertyPreviewResponseDto> getSuggestions(Integer limit);
     List<PropertyMediaResponseDto> getMediaByPropertyId(UUID propertyId);
+    PropertyResponseDto update(UUID propertyId, UpdatePropertyDto dto, UUID lessorId);
 }

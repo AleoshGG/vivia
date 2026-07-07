@@ -3,6 +3,7 @@ package aleosh.online.vivia.features.properties.properties.controllers;
 import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.request.UpdatePropertyDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyMediaResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
@@ -176,6 +177,21 @@ public class PropertyController {
                 "Media obtenida exitosamente",
                 HttpStatus.OK
         ).buildResponseEntity();
+    }
+
+    @Operation(description = "Actualiza parcialmente los campos de texto y numéricos de una propiedad; los campos nulos u omitidos no se modifican y los medios no se tocan por este endpoint.")
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('LESSOR')")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<BaseResponse<PropertyResponseDto>> update(
+            @Parameter(description = "ID de la propiedad", required = true)
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdatePropertyDto dto,
+            Authentication authentication
+    ) {
+        UUID lessorId = ((CustomUserDetails) authentication.getPrincipal()).getUserId();
+        PropertyResponseDto result = propertyService.update(id, dto, lessorId);
+        return new BaseResponse<>(true, result, "Propiedad actualizada exitosamente", HttpStatus.OK).buildResponseEntity();
     }
 
     @Operation(
