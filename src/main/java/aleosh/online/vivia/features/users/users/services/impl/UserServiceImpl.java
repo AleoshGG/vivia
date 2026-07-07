@@ -47,13 +47,18 @@ public class UserServiceImpl implements IUserService {
                 .map(l -> l.getVerificationStatus().name())
                 .orElse(null);
 
+        String phoneNumber = lessor
+                .map(Lessor::getPhoneNumber)
+                .orElse(null);
+
         return new UserProfileResponseDto(
                 user.getName(),
                 user.getPaternalSurname(),
                 user.getMaternalSurname(),
                 user.getEmail(),
                 user.getPhotoUrl(),
-                verificationStatus
+                verificationStatus,
+                phoneNumber
         );
     }
 

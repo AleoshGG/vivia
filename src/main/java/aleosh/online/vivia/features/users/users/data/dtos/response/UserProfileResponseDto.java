@@ -28,4 +28,7 @@ public class UserProfileResponseDto {
 
     @Schema(description = "Estado de verificación de identidad. null si el usuario es inquilino.", example = "UNVERIFIED", nullable = true, allowableValues = {"UNVERIFIED", "PENDING_REVIEW", "VERIFIED", "REJECTED"})
     private String verificationStatus;
+
+    @Schema(description = "Número de teléfono del arrendador. null si el usuario es inquilino.", example = "5512345678", nullable = true)
+    private String phoneNumber;
 }
