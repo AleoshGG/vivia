@@ -14,7 +14,7 @@ public interface CredentialRepository extends JpaRepository<CredentialEntity, UU
 
     Optional<CredentialEntity> findByUser_IdAndCredentialType(UUID userId, CredentialType credentialType);
 
-    boolean existsByUser_IdAndCredentialType(UUID userId, CredentialType credentialType);
+    boolean existsByUser_IdAndSecretDataIsNotNull(UUID userId);
 
     @Query("""
         SELECT c FROM CredentialEntity c

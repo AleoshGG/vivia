@@ -1,7 +1,6 @@
 package aleosh.online.vivia.features.users.users.services.impl;
 
 import aleosh.online.vivia.features.auth.data.repositories.CredentialRepository;
-import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.users.lessor.domain.entities.Lessor;
 import aleosh.online.vivia.features.users.lessor.domain.repositories.ILessorRepository;
 import aleosh.online.vivia.features.users.users.data.dtos.request.UpdateUserEmailRequestDto;
@@ -80,9 +79,9 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional
     public void updateEmail(UUID userId, UpdateUserEmailRequestDto dto) {
-        // Las cuentas registradas con email/contraseña usan el email como identificador de login,
-        // por lo que no se permite modificarlo.
-        if (credentialRepository.existsByUser_IdAndCredentialType(userId, CredentialType.PASSWORD)) {
+        // Las cuentas registradas con email/contraseña (única credencial con secretData) usan el
+        // email como identificador de login, por lo que no se permite modificarlo.
+        if (credentialRepository.existsByUser_IdAndSecretDataIsNotNull(userId)) {
             throw new EmailNotEditableException(
                     "No puedes editar tu correo porque tu cuenta fue creada con email y contraseña.");
         }
