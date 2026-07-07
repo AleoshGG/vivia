@@ -1,21 +1,19 @@
 package aleosh.online.vivia.features.users.admin.controllers;
 
-import com.google.firebase.messaging.FirebaseMessaging;
+import aleosh.online.vivia.core.config.security.CustomUserDetails;
+import aleosh.online.vivia.core.dtos.BaseResponse;
+import aleosh.online.vivia.features.users.admin.data.dtos.request.AdminFcmTokenRequestDto;
+import aleosh.online.vivia.features.users.admin.services.IAdminFcmService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/admin/fcm")
@@ -24,47 +22,38 @@ import java.util.List;
 @ConditionalOnProperty(name = "fcm.enabled", havingValue = "true")
 public class AdminFcmController {
 
-    private static final Logger log = LoggerFactory.getLogger(AdminFcmController.class);
-    private static final String TOPIC = "admin-verifications";
+    private final IAdminFcmService adminFcmService;
+
+    public AdminFcmController(IAdminFcmService adminFcmService) {
+        this.adminFcmService = adminFcmService;
+    }
 
     @Operation(
-            summary = "Suscribir token FCM al topic de verificaciones",
-            description = "Registra el token FCM del navegador admin al topic 'admin-verifications' para recibir notificaciones push cuando un arrendador sube sus documentos.",
+            summary = "Registrar token FCM del admin",
+            description = "Guarda el token FCM del navegador del admin y lo suscribe a los topics " +
+                    "'admin-verifications' y 'admin-reports' para recibir notificaciones push del panel.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @PostMapping("/subscribe")
-    public ResponseEntity<Void> subscribe(@Valid @RequestBody FcmSubscribeRequest body) {
-        try {
-            FirebaseMessaging.getInstance().subscribeToTopic(List.of(body.getFcmToken()), TOPIC);
-            log.info("Token FCM suscrito al topic '{}' correctamente", TOPIC);
-        } catch (Exception e) {
-            log.error("Error suscribiendo token FCM al topic '{}': {}", TOPIC, e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
-        return ResponseEntity.ok().build();
+    public ResponseEntity<BaseResponse<Void>> subscribe(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody AdminFcmTokenRequestDto body
+    ) {
+        adminFcmService.subscribe(userDetails.getUserId(), body.getFcmToken());
+        return new BaseResponse<Void>(true, null, "Token FCM registrado", HttpStatus.OK).buildResponseEntity();
     }
 
     @Operation(
-            summary = "Desuscribir token FCM del topic de verificaciones",
-            description = "Elimina el token FCM del navegador del topic 'admin-verifications'. Llamar al cerrar sesión.",
+            summary = "Eliminar token FCM del admin",
+            description = "Borra el token FCM guardado y lo desuscribe de los topics del panel. Llamar al cerrar sesión.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @DeleteMapping("/subscribe")
-    public ResponseEntity<Void> unsubscribe(@Valid @RequestBody FcmSubscribeRequest body) {
-        try {
-            FirebaseMessaging.getInstance().unsubscribeFromTopic(List.of(body.getFcmToken()), TOPIC);
-            log.info("Token FCM desuscrito del topic '{}' correctamente", TOPIC);
-        } catch (Exception e) {
-            log.error("Error desuscribiendo token FCM del topic '{}': {}", TOPIC, e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
-        return ResponseEntity.ok().build();
-    }
-
-    @Data
-    @NoArgsConstructor
-    public static class FcmSubscribeRequest {
-        @NotBlank
-        private String fcmToken;
+    public ResponseEntity<BaseResponse<Void>> unsubscribe(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody AdminFcmTokenRequestDto body
+    ) {
+        adminFcmService.unsubscribe(userDetails.getUserId(), body.getFcmToken());
+        return new BaseResponse<Void>(true, null, "Token FCM eliminado", HttpStatus.OK).buildResponseEntity();
     }
 }
