@@ -1,5 +1,6 @@
 package aleosh.online.vivia.features.auth.controllers;
 
+import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.features.auth.data.dtos.request.BiometricLoginChallengeDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.GoogleLoginRequestDto;
 import aleosh.online.vivia.features.auth.data.dtos.request.LoginRequestDto;
@@ -8,7 +9,6 @@ import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.auth.data.dtos.request.VerifyLoginDto;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.auth.services.IAuthService;
-import aleosh.online.vivia.features.auth.services.impl.RefreshTokenServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -18,7 +18,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,12 +27,10 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final IAuthService authService;
-    private final RefreshTokenServiceImpl refreshTokenServiceImpl;
 
     @Autowired
-    public AuthController(IAuthService authService, RefreshTokenServiceImpl refreshTokenServiceImpl) {
+    public AuthController(IAuthService authService) {
         this.authService = authService;
-        this.refreshTokenServiceImpl = refreshTokenServiceImpl;
     }
 
     @Operation(
@@ -151,11 +149,11 @@ public class AuthController {
         ).buildResponseEntity();
     }
 
-    @Operation(summary = "Cerrar sesión", description = "Invalida el Refresh Token del usuario autenticado actual.")
+    @Operation(summary = "Cerrar sesión", description = "Invalida el Refresh Token del usuario autenticado actual " +
+            "y elimina su FCM token para dejar de enviarle notificaciones push.")
     @PostMapping(value = "/logout", produces = "application/json")
-    public ResponseEntity<BaseResponse<Void>> logout() {
-        String identifier = SecurityContextHolder.getContext().getAuthentication().getName();
-        refreshTokenServiceImpl.deleteByUserIdentifier(identifier);
+    public ResponseEntity<BaseResponse<Void>> logout(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        authService.logout(userDetails.getUserId(), userDetails.getUsername());
 
         return new BaseResponse<Void>(
                 true, null, "Sesión cerrada correctamente", HttpStatus.OK

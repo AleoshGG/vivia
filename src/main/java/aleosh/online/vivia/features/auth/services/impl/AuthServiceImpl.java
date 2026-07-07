@@ -307,6 +307,14 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
+    @Transactional
+    public void logout(UUID userId, String userIdentifier) {
+        refreshTokenServiceImpl.deleteByUserIdentifier(userIdentifier);
+        // Se limpia el FCM token para que el dispositivo deje de recibir pushes tras cerrar sesión.
+        userRepository.updateFcmToken(userId, null);
+    }
+
+    @Override
     public AuthResponseDto refreshToken(RefreshTokenRequestDto request) {
         String requestRefreshToken = request.getRefreshToken();
 

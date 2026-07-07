@@ -18,4 +18,5 @@ public interface IAuthService {
     AuthResponseDto googleLogin(GoogleLoginRequestDto googleLoginDto);
     AuthResponseDto refreshToken(RefreshTokenRequestDto request);
     void updatePassword(UUID userId, UpdatePasswordRequestDto dto);
+    void logout(UUID userId, String userIdentifier);
 }
