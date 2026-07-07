@@ -1,5 +1,7 @@
 package aleosh.online.vivia.features.users.users.services.impl;
 
+import aleosh.online.vivia.features.auth.data.repositories.CredentialRepository;
+import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.users.lessor.domain.entities.Lessor;
 import aleosh.online.vivia.features.users.lessor.domain.repositories.ILessorRepository;
 import aleosh.online.vivia.features.users.users.data.dtos.request.UpdateUserEmailRequestDto;
@@ -7,6 +9,7 @@ import aleosh.online.vivia.features.users.users.data.dtos.request.UpdateUserName
 import aleosh.online.vivia.features.users.users.data.dtos.response.UserProfileResponseDto;
 import aleosh.online.vivia.features.users.users.data.repositories.UserRepository;
 import aleosh.online.vivia.features.users.users.domain.entities.User;
+import aleosh.online.vivia.features.users.users.domain.exceptions.EmailNotEditableException;
 import aleosh.online.vivia.features.users.users.domain.exceptions.UserAlreadyExistsException;
 import aleosh.online.vivia.features.users.users.domain.exceptions.UserNotFoundException;
 import aleosh.online.vivia.features.users.users.domain.repositories.IUserRepository;
@@ -23,11 +26,14 @@ public class UserServiceImpl implements IUserService {
     private final IUserRepository userRepository;
     private final ILessorRepository lessorRepository;
     private final UserRepository userJpaRepository;
+    private final CredentialRepository credentialRepository;
 
-    public UserServiceImpl(IUserRepository userRepository, ILessorRepository lessorRepository, UserRepository userJpaRepository) {
+    public UserServiceImpl(IUserRepository userRepository, ILessorRepository lessorRepository,
+                           UserRepository userJpaRepository, CredentialRepository credentialRepository) {
         this.userRepository = userRepository;
         this.lessorRepository = lessorRepository;
         this.userJpaRepository = userJpaRepository;
+        this.credentialRepository = credentialRepository;
     }
 
     @Override
@@ -74,6 +80,12 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional
     public void updateEmail(UUID userId, UpdateUserEmailRequestDto dto) {
+        // Las cuentas registradas con email/contraseña usan el email como identificador de login,
+        // por lo que no se permite modificarlo.
+        if (credentialRepository.existsByUser_IdAndCredentialType(userId, CredentialType.PASSWORD)) {
+            throw new EmailNotEditableException(
+                    "No puedes editar tu correo porque tu cuenta fue creada con email y contraseña.");
+        }
         if (userJpaRepository.existsByEmail(dto.getEmail())) {
             throw new UserAlreadyExistsException("El correo " + dto.getEmail() + " ya está registrado.");
         }
