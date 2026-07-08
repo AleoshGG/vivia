@@ -17,8 +17,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/lessors/verifications")
 @Tag(name = "Verificación de identidad", description = "Endpoints para el flujo de verificación de identidad del arrendador")
@@ -60,22 +58,14 @@ public class LessorVerificationController {
     }
 
     @Operation(summary = "Reiniciar verificación",
-            description = "Resetea el estado de verificación a UNVERIFIED y elimina los documentos subidos anteriormente. Solo puede ejecutarse sobre el propio perfil del arrendador autenticado.",
+            description = "Resetea el estado de verificación a UNVERIFIED y elimina los documentos subidos anteriormente. El arrendador se resuelve desde el token.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponse(responseCode = "204", description = "Verificación reiniciada exitosamente.")
-    @ApiResponse(responseCode = "403", description = "El arrendador no puede reiniciar la verificación de otro usuario.")
     @PreAuthorize("hasRole('LESSOR')")
-    @PatchMapping("/{id}")
-    public ResponseEntity<BaseResponse<Void>> resetVerificationStatus(
-            @PathVariable UUID id,
-            Authentication authentication
-    ) {
+    @PatchMapping
+    public ResponseEntity<BaseResponse<Void>> resetVerificationStatus(Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        if (!userDetails.getUserId().equals(id)) {
-            return new BaseResponse<Void>(false, null, "No autorizado para modificar la verificación de otro arrendador", HttpStatus.FORBIDDEN)
-                    .buildResponseEntity();
-        }
-        lessorService.resetVerificationStatus(id);
+        lessorService.resetVerificationStatus(userDetails.getUserId());
 
         return new BaseResponse<Void>(true, null, "Verificación reiniciada", HttpStatus.NO_CONTENT).buildResponseEntity();
     }
