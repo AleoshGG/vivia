@@ -19,6 +19,7 @@ import aleosh.online.vivia.features.users.lessor.domain.objectvalues.DocumentTyp
 import aleosh.online.vivia.features.users.lessor.domain.objectvalues.VerificationStatus;
 import aleosh.online.vivia.features.users.lessor.services.IVerificationPresignService;
 import aleosh.online.vivia.core.config.jwt.JwtProvider;
+import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
 import aleosh.online.vivia.features.auth.domain.objectvalues.CredentialType;
 import aleosh.online.vivia.features.auth.services.impl.RefreshTokenServiceImpl;
@@ -166,7 +167,8 @@ public class LessorServiceImpl implements ILessorService {
         // 6. Generar tokens (Iniciar sesión de inmediato)
         String role = "ROLE_LESSOR";
         var authorities = Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority(role));
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(request.getEmail(), null, authorities);
+        CustomUserDetails userDetails = new CustomUserDetails(userEntity.getId(), request.getEmail(), null, authorities);
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
 
         String jwt = jwtProvider.generateToken(auth);
         String refreshToken = refreshTokenServiceImpl.createRefreshToken(request.getEmail(), role);
@@ -228,7 +230,8 @@ public class LessorServiceImpl implements ILessorService {
 
         String role = "ROLE_LESSOR";
         var authorities = Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority(role));
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
+        CustomUserDetails userDetails = new CustomUserDetails(userEntity.getId(), email, null, authorities);
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
 
         String jwt = jwtProvider.generateToken(auth);
         String refreshToken = refreshTokenServiceImpl.createRefreshToken(email, role);
@@ -353,8 +356,9 @@ public class LessorServiceImpl implements ILessorService {
             var authorities = Collections.singletonList(
                 new org.springframework.security.core.authority.SimpleGrantedAuthority(role)
             );
+            CustomUserDetails userDetails = new CustomUserDetails(userEntity.getId(), userData.getEmail(), null, authorities);
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                userData.getEmail(), null, authorities
+                userDetails, null, authorities
             );
 
             String jwt = jwtProvider.generateToken(auth);

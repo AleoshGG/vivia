@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.users.lessee.services.impl;
 
 import aleosh.online.vivia.core.config.jwt.JwtProvider;
+import aleosh.online.vivia.core.config.security.CustomUserDetails;
 import aleosh.online.vivia.features.auth.data.dtos.response.AuthResponseDto;
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
 import aleosh.online.vivia.features.auth.data.entities.WebAuthnCredentialEntity;
@@ -121,7 +122,8 @@ public class LesseeServiceImpl implements ILesseeService {
 
         String role = "ROLE_LESSEE";
         var authorities = Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority(role));
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(request.getEmail(), null, authorities);
+        CustomUserDetails userDetails = new CustomUserDetails(userEntity.getId(), request.getEmail(), null, authorities);
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
 
         String jwt = jwtProvider.generateToken(auth);
         String refreshToken = refreshTokenServiceImpl.createRefreshToken(request.getEmail(), role);
@@ -181,7 +183,8 @@ public class LesseeServiceImpl implements ILesseeService {
 
         String role = "ROLE_LESSEE";
         var authorities = Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority(role));
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
+        CustomUserDetails userDetails = new CustomUserDetails(userEntity.getId(), email, null, authorities);
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
 
         String jwt = jwtProvider.generateToken(auth);
         String refreshToken = refreshTokenServiceImpl.createRefreshToken(email, role);
@@ -305,8 +308,9 @@ public class LesseeServiceImpl implements ILesseeService {
             var authorities = Collections.singletonList(
                 new org.springframework.security.core.authority.SimpleGrantedAuthority(role)
             );
+            CustomUserDetails userDetails = new CustomUserDetails(userEntity.getId(), userData.getEmail(), null, authorities);
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                userData.getEmail(), null, authorities
+                userDetails, null, authorities
             );
 
             String jwt = jwtProvider.generateToken(auth);
