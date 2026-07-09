@@ -17,6 +17,7 @@ import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -71,12 +72,20 @@ public class PropertyDetailMapper {
         if (address == null) {
             return null;
         }
+        BigDecimal latitude = null;
+        BigDecimal longitude = null;
+        if (address.getLocation() != null) {
+            latitude = BigDecimal.valueOf(address.getLocation().getY());
+            longitude = BigDecimal.valueOf(address.getLocation().getX());
+        }
         return PropertyDetailAddressDto.builder()
                 .id(address.getId())
                 .street(address.getStreet())
                 .exteriorNumber(address.getExteriorNumber())
                 .interiorNumber(address.getInteriorNumber())
                 .neighborhood(toNeighborhoodDto(address.getNeighborhood()))
+                .latitude(latitude)
+                .longitude(longitude)
                 .build();
     }
 

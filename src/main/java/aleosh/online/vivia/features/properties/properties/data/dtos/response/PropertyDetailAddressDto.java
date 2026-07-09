@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
@@ -29,4 +30,10 @@ public class PropertyDetailAddressDto {
 
     @Schema(description = "Colonia")
     private PropertyDetailNeighborhoodDto neighborhood;
+
+    @Schema(description = "Latitud (nula si no tiene ubicación registrada)")
+    private BigDecimal latitude;
+
+    @Schema(description = "Longitud (nula si no tiene ubicación registrada)")
+    private BigDecimal longitude;
 }
