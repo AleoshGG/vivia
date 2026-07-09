@@ -1,6 +1,8 @@
 package aleosh.online.vivia.features.address.address.domain.entities;
 
 import aleosh.online.vivia.features.address.address.domain.exceptions.InvalidAddressException;
+
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public class Address {
@@ -9,6 +11,8 @@ public class Address {
     private final String street;
     private final String exteriorNumber;
     private final String interiorNumber;
+    private final BigDecimal latitude;
+    private final BigDecimal longitude;
 
     private Address(Builder builder) {
         validate(builder);
@@ -17,6 +21,8 @@ public class Address {
         this.street = builder.street;
         this.exteriorNumber = builder.exteriorNumber;
         this.interiorNumber = builder.interiorNumber;
+        this.latitude = builder.latitude;
+        this.longitude = builder.longitude;
     }
 
     private void validate(Builder builder) {
@@ -47,6 +53,20 @@ public class Address {
         if (builder.interiorNumber != null && builder.interiorNumber.length() > 10) {
             throw new InvalidAddressException("Interior number must not exceed 10 characters");
         }
+
+        boolean hasLat = builder.latitude != null;
+        boolean hasLon = builder.longitude != null;
+        if (hasLat != hasLon) {
+            throw new InvalidAddressException("Both latitude and longitude must be provided together");
+        }
+        if (hasLat) {
+            if (builder.latitude.compareTo(new BigDecimal("-90")) < 0 || builder.latitude.compareTo(new BigDecimal("90")) > 0) {
+                throw new InvalidAddressException("Latitude must be between -90 and 90");
+            }
+            if (builder.longitude.compareTo(new BigDecimal("-180")) < 0 || builder.longitude.compareTo(new BigDecimal("180")) > 0) {
+                throw new InvalidAddressException("Longitude must be between -180 and 180");
+            }
+        }
     }
 
     public static Builder builder() {
@@ -73,12 +93,22 @@ public class Address {
         return interiorNumber;
     }
 
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
+    }
+
     public static class Builder {
         private UUID id;
         private UUID neighborhoodId;
         private String street;
         private String exteriorNumber;
         private String interiorNumber;
+        private BigDecimal latitude;
+        private BigDecimal longitude;
 
         public Builder id(UUID id) {
             this.id = id;
@@ -102,6 +132,16 @@ public class Address {
 
         public Builder interiorNumber(String interiorNumber) {
             this.interiorNumber = interiorNumber;
+            return this;
+        }
+
+        public Builder latitude(BigDecimal latitude) {
+            this.latitude = latitude;
+            return this;
+        }
+
+        public Builder longitude(BigDecimal longitude) {
+            this.longitude = longitude;
             return this;
         }
 

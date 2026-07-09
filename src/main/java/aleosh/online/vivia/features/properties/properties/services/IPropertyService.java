@@ -20,4 +20,5 @@ public interface IPropertyService {
     List<PropertyPreviewResponseDto> getSuggestions(Integer limit);
     List<PropertyMediaResponseDto> getMediaByPropertyId(UUID propertyId);
     PropertyResponseDto update(UUID propertyId, UpdatePropertyDto dto, UUID lessorId);
+    List<PropertyPreviewResponseDto> getNearMe(UUID lesseeId);
 }

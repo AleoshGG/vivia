@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.properties.draft.services.impl;
 
 import aleosh.online.vivia.features.address.address.data.entities.AddressEntity;
+import aleosh.online.vivia.features.address.address.data.mappers.AddressMapper;
 import aleosh.online.vivia.features.address.address.data.repositories.AddressRepository;
 import aleosh.online.vivia.features.address.neighborhoods.data.entities.NeighborhoodEntity;
 import aleosh.online.vivia.features.address.neighborhoods.data.repositories.NeighborhoodRepository;
@@ -35,6 +36,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
     private final NeighborhoodRepository neighborhoodRepository;
     private final LessorRepository lessorRepository;
     private final AmenityRepository amenityRepository;
+    private final AddressMapper addressMapper;
     private final String bucket;
     private final String region;
 
@@ -45,6 +47,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
             NeighborhoodRepository neighborhoodRepository,
             LessorRepository lessorRepository,
             AmenityRepository amenityRepository,
+            AddressMapper addressMapper,
             @Value("${aws.s3.bucket}") String bucket,
             @Value("${aws.region}") String region
     ) {
@@ -54,6 +57,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
         this.neighborhoodRepository = neighborhoodRepository;
         this.lessorRepository = lessorRepository;
         this.amenityRepository = amenityRepository;
+        this.addressMapper = addressMapper;
         this.bucket = bucket;
         this.region = region;
     }
@@ -77,6 +81,7 @@ public class PropertyPublicationServiceImpl implements IPropertyPublicationServi
                 .street(draft.getAddress().getStreet())
                 .exteriorNumber(draft.getAddress().getExteriorNumber())
                 .interiorNumber(draft.getAddress().getInteriorNumber())
+                .location(addressMapper.toPoint(draft.getAddress().getLatitude(), draft.getAddress().getLongitude()))
                 .build();
         addressRepository.save(address);
 

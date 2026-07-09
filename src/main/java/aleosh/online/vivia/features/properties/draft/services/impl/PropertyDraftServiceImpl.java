@@ -129,7 +129,9 @@ public class PropertyDraftServiceImpl implements IPropertyDraftService {
                 neighborhood.getPostalCode(),
                 request.getStreet(),
                 request.getExteriorNumber(),
-                request.getInteriorNumber()
+                request.getInteriorNumber(),
+                request.getLatitude(),
+                request.getLongitude()
         );
 
         PropertyDraft draft = PropertyDraft.builder()

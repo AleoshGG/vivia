@@ -402,6 +402,8 @@ public class PropertyDraft {
         private final String street;
         private final String exteriorNumber;
         private final String interiorNumber;
+        private final java.math.BigDecimal latitude;
+        private final java.math.BigDecimal longitude;
 
         @com.fasterxml.jackson.annotation.JsonCreator
         public AddressData(
@@ -411,7 +413,9 @@ public class PropertyDraft {
                 @com.fasterxml.jackson.annotation.JsonProperty("postalCode") String postalCode,
                 @com.fasterxml.jackson.annotation.JsonProperty("street") String street,
                 @com.fasterxml.jackson.annotation.JsonProperty("exteriorNumber") String exteriorNumber,
-                @com.fasterxml.jackson.annotation.JsonProperty("interiorNumber") String interiorNumber
+                @com.fasterxml.jackson.annotation.JsonProperty("interiorNumber") String interiorNumber,
+                @com.fasterxml.jackson.annotation.JsonProperty("latitude") java.math.BigDecimal latitude,
+                @com.fasterxml.jackson.annotation.JsonProperty("longitude") java.math.BigDecimal longitude
         ) {
             this.id = id;
             this.neighborhoodId = neighborhoodId;
@@ -420,6 +424,8 @@ public class PropertyDraft {
             this.street = street;
             this.exteriorNumber = exteriorNumber;
             this.interiorNumber = interiorNumber;
+            this.latitude = latitude;
+            this.longitude = longitude;
         }
 
         public UUID getId() {
@@ -448,6 +454,14 @@ public class PropertyDraft {
 
         public String getInteriorNumber() {
             return interiorNumber;
+        }
+
+        public java.math.BigDecimal getLatitude() {
+            return latitude;
+        }
+
+        public java.math.BigDecimal getLongitude() {
+            return longitude;
         }
     }
 }

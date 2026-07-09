@@ -95,6 +95,16 @@ public class CreatePropertyDraftRequestDto {
     )
     private List<UUID> amenityIds = new ArrayList<>();
 
+    @Schema(example = "20.6736", description = "Latitud de la propiedad (opcional, rango -90 a 90)")
+    @DecimalMin(value = "-90", message = "Latitude must be >= -90")
+    @DecimalMax(value = "90", message = "Latitude must be <= 90")
+    private BigDecimal latitude;
+
+    @Schema(example = "-103.3440", description = "Longitud de la propiedad (opcional, rango -180 a 180)")
+    @DecimalMin(value = "-180", message = "Longitude must be >= -180")
+    @DecimalMax(value = "180", message = "Longitude must be <= 180")
+    private BigDecimal longitude;
+
     @Schema(description = "Lista de archivos multimedia a subir")
     @NotNull(message = "Media manifest is required")
     @NotEmpty(message = "Media manifest must contain at least one item")

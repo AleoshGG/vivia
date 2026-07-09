@@ -4,6 +4,7 @@ import aleosh.online.vivia.features.address.neighborhoods.data.entities.Neighbor
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.locationtech.jts.geom.Point;
 
 import java.sql.Types;
 import java.util.UUID;
@@ -35,4 +36,7 @@ public class AddressEntity {
 
     @Column(name = "interior_number", length = 10)
     private String interiorNumber;
+
+    @Column(name = "location", columnDefinition = "geography(Point,4326)")
+    private Point location;
 }

@@ -14,6 +14,7 @@ import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesse
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseeGoogleDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.RegisterLesseePasswordDto;
 import aleosh.online.vivia.features.users.lessee.data.dtos.request.UpdateLesseeUbicationDto;
+import aleosh.online.vivia.features.users.lessee.data.dtos.response.LesseeUbicationResponseDto;
 import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
 import aleosh.online.vivia.features.users.lessee.data.repositories.LesseeRepository;
 import aleosh.online.vivia.features.users.lessee.domain.exceptions.LesseeNotFoundException;
@@ -338,6 +339,14 @@ public class LesseeServiceImpl implements ILesseeService {
         lessee.setLatitude(dto.getLatitude());
         lessee.setLongitude(dto.getLongitude());
         lesseeRepository.save(lessee);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LesseeUbicationResponseDto getUbication(UUID lesseeId) {
+        LesseeEntity lessee = lesseeRepository.findById(lesseeId)
+                .orElseThrow(() -> new LesseeNotFoundException("Lessee no encontrado con id: " + lesseeId));
+        return new LesseeUbicationResponseDto(lessee.getLatitude(), lessee.getLongitude());
     }
 
     // Clase interna para almacenar datos temporales de registro

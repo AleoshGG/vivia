@@ -138,6 +138,27 @@ public class PropertyController {
     }
 
     @Operation(
+            summary = "Obtener propiedades cercanas",
+            description = "Devuelve las 5 propiedades más cercanas a la ubicación registrada del arrendatario; si no tiene ubicación registrada, devuelve las 5 más recientes",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PreAuthorize("hasRole('LESSEE')")
+    @GetMapping("/nearme")
+    public ResponseEntity<BaseResponse<List<PropertyPreviewResponseDto>>> getNearMe(
+            Authentication authentication
+    ) {
+        UUID lesseeId = ((CustomUserDetails) authentication.getPrincipal()).getUserId();
+        List<PropertyPreviewResponseDto> result = propertyService.getNearMe(lesseeId);
+
+        return new BaseResponse<>(
+                true,
+                result,
+                "Propiedades cercanas obtenidas exitosamente",
+                HttpStatus.OK
+        ).buildResponseEntity();
+    }
+
+    @Operation(
             summary = "Sugerencias de propiedades",
             description = "Retorna propiedades en formato de vista previa ordenadas de la más reciente a la más antigua. Acepta un parámetro opcional `limit`.",
             security = @SecurityRequirement(name = "bearerAuth")

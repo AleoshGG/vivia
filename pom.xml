@@ -85,6 +85,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- PostGIS / Hibernate Spatial -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-spatial</artifactId>
+        </dependency>
+
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

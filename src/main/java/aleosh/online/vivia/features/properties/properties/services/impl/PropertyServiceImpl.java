@@ -21,6 +21,7 @@ import aleosh.online.vivia.features.properties.properties.domain.repositories.IP
 import aleosh.online.vivia.features.properties.properties.services.IPropertyService;
 import aleosh.online.vivia.features.properties.properties.services.mappers.PropertyDetailMapper;
 import aleosh.online.vivia.features.properties.properties.services.mappers.PropertyMapper;
+import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,7 @@ public class PropertyServiceImpl implements IPropertyService {
     private final PropertyDetailMapper detailMapper;
     private final IPropertyLikeRepository likeRepository;
     private final PropertyMediaRepository propertyMediaRepository;
+    private final ILesseeService lesseeService;
 
     public PropertyServiceImpl(
             IPropertyRepository propertyRepository,
@@ -50,7 +52,8 @@ public class PropertyServiceImpl implements IPropertyService {
             @Qualifier("propertyServiceMapper") PropertyMapper mapper,
             PropertyDetailMapper detailMapper,
             IPropertyLikeRepository likeRepository,
-            PropertyMediaRepository propertyMediaRepository
+            PropertyMediaRepository propertyMediaRepository,
+            ILesseeService lesseeService
     ) {
         this.propertyRepository = propertyRepository;
         this.addressRepository = addressRepository;
@@ -59,6 +62,7 @@ public class PropertyServiceImpl implements IPropertyService {
         this.detailMapper = detailMapper;
         this.likeRepository = likeRepository;
         this.propertyMediaRepository = propertyMediaRepository;
+        this.lesseeService = lesseeService;
     }
 
     @Override
@@ -246,5 +250,20 @@ public class PropertyServiceImpl implements IPropertyService {
 
         PropertyEntity saved = propertyJpaRepository.save(entity);
         return mapper.toResponseDtoWithMedia(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PropertyPreviewResponseDto> getNearMe(UUID lesseeId) {
+        var ubication = lesseeService.getUbication(lesseeId);
+
+        if (ubication.getLatitude() == null || ubication.getLongitude() == null) {
+            return getSuggestions(5);
+        }
+
+        return propertyJpaRepository.findNearest(ubication.getLatitude(), ubication.getLongitude())
+                .stream()
+                .map(mapper::toPreviewDto)
+                .collect(Collectors.toList());
     }
 }
