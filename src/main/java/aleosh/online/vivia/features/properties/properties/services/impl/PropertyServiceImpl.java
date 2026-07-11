@@ -1,20 +1,33 @@
 package aleosh.online.vivia.features.properties.properties.services.impl;
 
+import aleosh.online.vivia.features.address.address.data.entities.AddressEntity;
+import aleosh.online.vivia.features.address.address.data.mappers.AddressMapper;
 import aleosh.online.vivia.features.address.address.domain.entities.Address;
+import aleosh.online.vivia.features.address.address.domain.exceptions.InvalidAddressException;
 import aleosh.online.vivia.features.address.address.domain.repositories.IAddressRepository;
+import aleosh.online.vivia.features.address.neighborhoods.data.entities.NeighborhoodEntity;
+import aleosh.online.vivia.features.address.neighborhoods.data.repositories.NeighborhoodRepository;
+import aleosh.online.vivia.features.address.neighborhoods.domain.exceptions.NeighborhoodNotFoundException;
+import aleosh.online.vivia.features.properties.amenity.data.entities.AmenityEntity;
+import aleosh.online.vivia.features.properties.amenity.data.repositories.AmenityRepository;
+import aleosh.online.vivia.features.properties.amenity.domain.exceptions.AmenityNotFoundException;
 import aleosh.online.vivia.features.properties.likes.domain.repositories.IPropertyLikeRepository;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.CreatePropertyDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.PropertyMediaDto;
+import aleosh.online.vivia.features.properties.properties.data.dtos.request.UpdateAddressPropertyDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.request.UpdatePropertyDto;
 import aleosh.online.vivia.features.properties.properties.domain.exceptions.PropertyOwnershipException;
+import aleosh.online.vivia.features.properties.properties.domain.exceptions.PropertyTypeNotFoundException;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyDetailResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyMediaResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyPreviewResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.dtos.response.PropertyResponseDto;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyEntity;
 import aleosh.online.vivia.features.properties.properties.data.entities.PropertyMediaEntity;
+import aleosh.online.vivia.features.properties.properties.data.entities.PropertyTypeEntity;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyMediaRepository;
 import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyRepository;
+import aleosh.online.vivia.features.properties.properties.data.repositories.PropertyTypeRepository;
 import aleosh.online.vivia.features.properties.properties.domain.entities.Property;
 import aleosh.online.vivia.features.properties.properties.domain.exceptions.PropertyNotFoundException;
 import aleosh.online.vivia.features.properties.properties.domain.repositories.IPropertyRepository;
@@ -44,6 +57,10 @@ public class PropertyServiceImpl implements IPropertyService {
     private final IPropertyLikeRepository likeRepository;
     private final PropertyMediaRepository propertyMediaRepository;
     private final ILesseeService lesseeService;
+    private final PropertyTypeRepository propertyTypeRepository;
+    private final NeighborhoodRepository neighborhoodRepository;
+    private final AmenityRepository amenityRepository;
+    private final AddressMapper addressDataMapper;
 
     public PropertyServiceImpl(
             IPropertyRepository propertyRepository,
@@ -53,7 +70,11 @@ public class PropertyServiceImpl implements IPropertyService {
             PropertyDetailMapper detailMapper,
             IPropertyLikeRepository likeRepository,
             PropertyMediaRepository propertyMediaRepository,
-            ILesseeService lesseeService
+            ILesseeService lesseeService,
+            PropertyTypeRepository propertyTypeRepository,
+            NeighborhoodRepository neighborhoodRepository,
+            AmenityRepository amenityRepository,
+            @Qualifier("addressDataMapper") AddressMapper addressDataMapper
     ) {
         this.propertyRepository = propertyRepository;
         this.addressRepository = addressRepository;
@@ -63,6 +84,10 @@ public class PropertyServiceImpl implements IPropertyService {
         this.likeRepository = likeRepository;
         this.propertyMediaRepository = propertyMediaRepository;
         this.lesseeService = lesseeService;
+        this.propertyTypeRepository = propertyTypeRepository;
+        this.neighborhoodRepository = neighborhoodRepository;
+        this.amenityRepository = amenityRepository;
+        this.addressDataMapper = addressDataMapper;
     }
 
     @Override
@@ -248,8 +273,55 @@ public class PropertyServiceImpl implements IPropertyService {
             }
         }
 
+        if (dto.getPropertyTypeId() != null) {
+            PropertyTypeEntity propertyType = propertyTypeRepository.findById(dto.getPropertyTypeId())
+                    .orElseThrow(() -> new PropertyTypeNotFoundException(
+                            "Property type not found with id: " + dto.getPropertyTypeId()));
+            entity.setPropertyType(propertyType);
+        }
+
+        if (dto.getAddress() != null) {
+            updateAddress(entity.getAddress(), dto.getAddress());
+        }
+
+        if (dto.getAmenityIds() != null) {
+            entity.getAmenities().clear();
+            if (!dto.getAmenityIds().isEmpty()) {
+                List<AmenityEntity> amenities = amenityRepository.findAllById(dto.getAmenityIds());
+                if (amenities.size() != dto.getAmenityIds().stream().distinct().count()) {
+                    throw new AmenityNotFoundException("One or more amenities were not found");
+                }
+                entity.getAmenities().addAll(amenities);
+            }
+        }
+
         PropertyEntity saved = propertyJpaRepository.save(entity);
         return mapper.toResponseDtoWithMedia(saved);
+    }
+
+    private void updateAddress(AddressEntity address, UpdateAddressPropertyDto dto) {
+        if ((dto.getLatitude() == null) != (dto.getLongitude() == null)) {
+            throw new InvalidAddressException("Both latitude and longitude must be provided together");
+        }
+
+        if (dto.getNeighborhoodId() != null) {
+            NeighborhoodEntity neighborhood = neighborhoodRepository.findById(dto.getNeighborhoodId())
+                    .orElseThrow(() -> new NeighborhoodNotFoundException(
+                            "Neighborhood not found with id: " + dto.getNeighborhoodId()));
+            address.setNeighborhood(neighborhood);
+        }
+        if (dto.getStreet() != null) {
+            address.setStreet(dto.getStreet());
+        }
+        if (dto.getExteriorNumber() != null) {
+            address.setExteriorNumber(dto.getExteriorNumber());
+        }
+        if (dto.getInteriorNumber() != null) {
+            address.setInteriorNumber(dto.getInteriorNumber());
+        }
+        if (dto.getLatitude() != null) {
+            address.setLocation(addressDataMapper.toPoint(dto.getLatitude(), dto.getLongitude()));
+        }
     }
 
     @Override

@@ -1,6 +1,7 @@
 package aleosh.online.vivia.features.properties.properties.data.dtos.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -10,12 +11,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Request para actualizar parcialmente una propiedad; los campos nulos u omitidos no se modifican")
+@Schema(description = "Request para actualizar parcialmente una propiedad; los campos nulos u omitidos no se modifican. "
+        + "Permite cambiar datos generales, tipo de propiedad, dirección y amenidades")
 public class UpdatePropertyDto {
 
     @Size(min = 10, max = 200, message = "title debe tener entre 10 y 200 caracteres")
@@ -54,4 +58,15 @@ public class UpdatePropertyDto {
     @DecimalMin(value = "0.01", message = "listedPrice debe ser mayor a cero")
     @Schema(example = "13500.00", description = "Precio de renta mensual en pesos (omitir para no cambiar)")
     private BigDecimal listedPrice;
+
+    @Schema(example = "b1a2c3d4-5e6f-7890-abcd-ef1234567890", description = "ID del nuevo tipo de propiedad (omitir para no cambiar)")
+    private UUID propertyTypeId;
+
+    @Valid
+    @Schema(description = "Actualización parcial de la dirección (omitir para no cambiar)")
+    private UpdateAddressPropertyDto address;
+
+    @Schema(example = "[\"a1b2c3d4-5e6f-7890-abcd-ef1234567890\"]",
+            description = "Reemplaza la lista completa de amenidades; lista vacía las elimina todas (omitir para no cambiar)")
+    private List<UUID> amenityIds;
 }

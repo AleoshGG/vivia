@@ -11,6 +11,8 @@ import aleosh.online.vivia.features.properties.properties.data.dtos.response.Pro
 import aleosh.online.vivia.features.properties.properties.services.IPropertyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -200,7 +202,20 @@ public class PropertyController {
         ).buildResponseEntity();
     }
 
-    @Operation(description = "Actualiza parcialmente los campos de texto y numéricos de una propiedad; los campos nulos u omitidos no se modifican y los medios no se tocan por este endpoint.")
+    @Operation(
+            summary = "Actualizar propiedad parcialmente",
+            description = "Actualiza únicamente los campos enviados en el cuerpo; los campos omitidos o "
+                    + "nulos no se modifican. Permite cambiar datos generales, tipo de propiedad, dirección "
+                    + "y amenidades (amenityIds reemplaza la lista completa; lista vacía las elimina). "
+                    + "pricePerM2 se recalcula automáticamente al cambiar listedPrice o areaM2. Los medios "
+                    + "no se tocan por este endpoint. Solo el arrendador dueño de la propiedad puede editarla."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Propiedad actualizada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Validación fallida (ej. latitud sin longitud)"),
+            @ApiResponse(responseCode = "403", description = "La propiedad no pertenece al arrendador autenticado"),
+            @ApiResponse(responseCode = "404", description = "Propiedad, tipo, colonia o amenidad no encontrada")
+    })
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('LESSOR')")
     @SecurityRequirement(name = "bearerAuth")
