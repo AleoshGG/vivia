@@ -5,6 +5,7 @@ import aleosh.online.vivia.core.dtos.BaseResponse;
 import aleosh.online.vivia.features.properties.draft.data.dtos.request.CreatePropertyDraftRequestDto;
 import aleosh.online.vivia.features.properties.draft.data.dtos.response.CreatePropertyDraftResponseDto;
 import aleosh.online.vivia.features.properties.draft.services.IPropertyDraftService;
+import aleosh.online.vivia.features.subscriptions.services.PremiumGuard;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,9 +23,12 @@ import java.util.UUID;
 public class PropertyDraftController {
 
     private final IPropertyDraftService propertyDraftService;
+    private final PremiumGuard premiumGuard;
 
-    public PropertyDraftController(IPropertyDraftService propertyDraftService) {
+    public PropertyDraftController(IPropertyDraftService propertyDraftService,
+                                   PremiumGuard premiumGuard) {
         this.propertyDraftService = propertyDraftService;
+        this.premiumGuard = premiumGuard;
     }
 
     @Operation(
@@ -39,9 +43,10 @@ public class PropertyDraftController {
             @Valid @RequestBody CreatePropertyDraftRequestDto request,
             Authentication authentication
     ) {
-        // Extract lessorId from JWT
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         UUID lessorId = userDetails.getUserId();
+
+        premiumGuard.assertCanPublishProperty(lessorId);
 
         CreatePropertyDraftResponseDto response = propertyDraftService.createDraft(request, lessorId);
 

@@ -20,6 +20,7 @@ public interface PropertyRepository extends JpaRepository<PropertyEntity, UUID> 
     List<PropertyEntity> findAllByDeletedAtIsNull();
     List<PropertyEntity> findAllByDeletedAtIsNullOrderByCreatedAtDesc();
     List<PropertyEntity> findAllByIdInAndDeletedAtIsNull(Collection<UUID> ids);
+    long countByLessorIdAndDeletedAtIsNull(UUID lessorId);
 
     @Query(value = """
             SELECT p.* FROM properties p
