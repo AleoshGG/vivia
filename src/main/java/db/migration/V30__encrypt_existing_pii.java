@@ -1,5 +1,7 @@
 package db.migration;
 
+import aleosh.online.vivia.core.security.encryption.EncryptionService;
+import aleosh.online.vivia.core.security.encryption.impl.AesGcmEncryptionService;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 import org.slf4j.Logger;
@@ -14,6 +16,11 @@ import java.util.List;
  *
  * Usa JDBC puro (no JPA) para evitar doble cifrado via AttributeConverter.
  *
+ * Es autocontenida: construye su propio EncryptionService leyendo ENCRYPTION_KEY
+ * del entorno. No depende de beans de Spring porque Flyway corre muy temprano en
+ * el ciclo de arranque (durante la creación del EntityManagerFactory), antes de
+ * que los @Component/@Service estén disponibles.
+ *
  * Enfoque a dos fases por tabla: primero se leen todos los registros a memoria
  * (cerrando el ResultSet), después se actualizan en lotes. Esto evita dos
  * problemas de PostgreSQL:
@@ -24,17 +31,26 @@ import java.util.List;
  *
  * Las tablas users/lessors son de volumen modesto, así que materializar en
  * memoria es seguro.
- *
- * Nota: Obtiene EncryptionService via PiiEncryptionHelper que fue inicializado
- * por Spring en tiempo de arranque.
  */
 public class V30__encrypt_existing_pii extends BaseJavaMigration {
     private static final Logger log = LoggerFactory.getLogger(V30__encrypt_existing_pii.class);
     private static final int BATCH_SIZE = 100;
 
+    private EncryptionService encryptionService;
+
     @Override
     public void migrate(Context context) throws Exception {
         log.info("=== Iniciando cifrado de PII existentes ===");
+
+        // La misma clave que usa la app en runtime (compose.yml pasa ENCRYPTION_KEY
+        // al contenedor). Debe estar presente o el cifrado sería inconsistente.
+        String encryptionKey = System.getenv("ENCRYPTION_KEY");
+        if (encryptionKey == null || encryptionKey.isBlank()) {
+            throw new IllegalStateException(
+                    "ENCRYPTION_KEY no está definida en el entorno. La migración V30 no puede cifrar sin ella. "
+                            + "Defínela en ~/vps/vivia/.env (misma clave que usará la app) y reintenta.");
+        }
+        this.encryptionService = new AesGcmEncryptionService(encryptionKey);
 
         Connection conn = context.getConnection();
         conn.setAutoCommit(false);
@@ -133,6 +149,6 @@ public class V30__encrypt_existing_pii extends BaseJavaMigration {
     }
 
     private String encryptNullable(String value) {
-        return value != null ? PiiEncryptionHelper.encrypt(value) : null;
+        return value != null ? encryptionService.encrypt(value) : null;
     }
 }
