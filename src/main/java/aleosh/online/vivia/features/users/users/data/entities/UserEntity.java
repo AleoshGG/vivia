@@ -1,5 +1,6 @@
 package aleosh.online.vivia.features.users.users.data.entities;
 
+import aleosh.online.vivia.core.security.encryption.converters.EncryptedStringConverter;
 import aleosh.online.vivia.features.auth.data.entities.CredentialEntity;
 import aleosh.online.vivia.features.users.admin.data.entities.AdminEntity;
 import aleosh.online.vivia.features.users.lessee.data.entities.LesseeEntity;
@@ -34,13 +35,16 @@ public class UserEntity {
     @Column(name = "id", updatable = false, nullable = false, length = 50)
     private UUID id;
 
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(name = "name", nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
     private String name;
 
-    @Column(name = "paternal_surname", nullable = false, length = 100)
+    @Column(name = "paternal_surname", nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
     private String paternalSurname;
 
-    @Column(name = "maternal_surname", nullable = false, length = 100)
+    @Column(name = "maternal_surname", nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
     private String maternalSurname;
 
     @Column(name = "email", nullable = false, unique = true, length = 255)
@@ -50,7 +54,8 @@ public class UserEntity {
     @Builder.Default
     private String photoUrl = "No photo";
 
-    @Column(name = "fcm_token", length = 512)
+    @Column(name = "fcm_token")
+    @Convert(converter = EncryptedStringConverter.class)
     private String fcmToken;
 
     @CreationTimestamp

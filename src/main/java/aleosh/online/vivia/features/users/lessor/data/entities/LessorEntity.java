@@ -1,5 +1,6 @@
 package aleosh.online.vivia.features.users.lessor.data.entities;
 
+import aleosh.online.vivia.core.security.encryption.converters.EncryptedStringConverter;
 import aleosh.online.vivia.features.users.lessor.domain.objectvalues.VerificationStatus;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import jakarta.persistence.*;
@@ -29,7 +30,8 @@ public class LessorEntity {
     @lombok.EqualsAndHashCode.Exclude
     private UserEntity user;
 
-    @Column(name = "phone_number", nullable = false, length = 15)
+    @Column(name = "phone_number", nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
