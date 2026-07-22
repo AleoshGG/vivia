@@ -6,13 +6,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Migración Java que cifra datos PII existentes en la BD.
  *
  * Usa JDBC puro (no JPA) para evitar doble cifrado via AttributeConverter.
- * Streaming de ResultSet para no saturar memoria con tablas grandes.
- * Batch de 100 registros para mejor performance.
+ *
+ * Enfoque a dos fases por tabla: primero se leen todos los registros a memoria
+ * (cerrando el ResultSet), después se actualizan en lotes. Esto evita dos
+ * problemas de PostgreSQL:
+ *   1. setFetchSize(Integer.MIN_VALUE) es un idiom de MySQL; PostgreSQL lo
+ *      rechaza con SQLState 22023 (invalid_parameter_value).
+ *   2. Intercalar la lectura de un cursor server-side con UPDATEs sobre la
+ *      misma conexión es frágil en PostgreSQL.
+ *
+ * Las tablas users/lessors son de volumen modesto, así que materializar en
+ * memoria es seguro.
  *
  * Nota: Obtiene EncryptionService via PiiEncryptionHelper que fue inicializado
  * por Spring en tiempo de arranque.
@@ -45,75 +56,83 @@ public class V30__encrypt_existing_pii extends BaseJavaMigration {
     }
 
     private void encryptUsersTable(Connection conn) throws SQLException {
-        String selectSql = "SELECT id, name, paternal_surname, maternal_surname, fcm_token FROM users ORDER BY id";
-        String updateSql = "UPDATE users SET name = ?, paternal_surname = ?, maternal_surname = ?, fcm_token = ? WHERE id = ?";
-
-        try (Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
-            stmt.setFetchSize(Integer.MIN_VALUE);
-            ResultSet rs = stmt.executeQuery(selectSql);
-
-            int count = 0;
-            try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-                while (rs.next()) {
-                    String userId = rs.getString("id");  // UUID como String
-                    String name = rs.getString("name");
-                    String paternalSurname = rs.getString("paternal_surname");
-                    String maternalSurname = rs.getString("maternal_surname");
-                    String fcmToken = rs.getString("fcm_token");
-
-                    String encryptedName = name != null ? PiiEncryptionHelper.encrypt(name) : null;
-                    String encryptedPaternal = paternalSurname != null ? PiiEncryptionHelper.encrypt(paternalSurname) : null;
-                    String encryptedMaternal = maternalSurname != null ? PiiEncryptionHelper.encrypt(maternalSurname) : null;
-                    String encryptedFcm = fcmToken != null ? PiiEncryptionHelper.encrypt(fcmToken) : null;
-
-                    pstmt.setString(1, encryptedName);
-                    pstmt.setString(2, encryptedPaternal);
-                    pstmt.setString(3, encryptedMaternal);
-                    pstmt.setString(4, encryptedFcm);
-                    pstmt.setString(5, userId);  // UUID como String
-                    pstmt.addBatch();
-
-                    count++;
-                    if (count % BATCH_SIZE == 0) {
-                        pstmt.executeBatch();
-                        log.info("Procesados {} registros de users", count);
-                    }
-                }
-                pstmt.executeBatch();
-                log.info("Cifrado completado: {} registros de users cifrados", count);
+        // Fase A: leer todos los registros a memoria.
+        // Cada fila: [id, name, paternal_surname, maternal_surname, fcm_token]
+        List<String[]> rows = new ArrayList<>();
+        String selectSql = "SELECT id, name, paternal_surname, maternal_surname, fcm_token FROM users";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(selectSql)) {
+            while (rs.next()) {
+                rows.add(new String[]{
+                        rs.getString("id"),
+                        rs.getString("name"),
+                        rs.getString("paternal_surname"),
+                        rs.getString("maternal_surname"),
+                        rs.getString("fcm_token")
+                });
             }
+        }
+
+        // Fase B: cifrar y actualizar en lotes.
+        String updateSql = "UPDATE users SET name = ?, paternal_surname = ?, maternal_surname = ?, "
+                + "fcm_token = ? WHERE id = ?";
+        int count = 0;
+        try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
+            for (String[] row : rows) {
+                String id = row[0];
+                pstmt.setString(1, encryptNullable(row[1]));
+                pstmt.setString(2, encryptNullable(row[2]));
+                pstmt.setString(3, encryptNullable(row[3]));
+                pstmt.setString(4, encryptNullable(row[4]));
+                pstmt.setString(5, id);
+                pstmt.addBatch();
+
+                count++;
+                if (count % BATCH_SIZE == 0) {
+                    pstmt.executeBatch();
+                    log.info("Procesados {} registros de users", count);
+                }
+            }
+            pstmt.executeBatch();
+            log.info("Cifrado completado: {} registros de users cifrados", count);
         }
     }
 
     private void encryptLessorsTable(Connection conn) throws SQLException {
-        String selectSql = "SELECT id, phone_number FROM lessors ORDER BY id";
-        String updateSql = "UPDATE lessors SET phone_number = ? WHERE id = ?";
-
-        try (Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
-            stmt.setFetchSize(Integer.MIN_VALUE);
-            ResultSet rs = stmt.executeQuery(selectSql);
-
-            int count = 0;
-            try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-                while (rs.next()) {
-                    String lessorId = rs.getString("id");  // UUID como String
-                    String phoneNumber = rs.getString("phone_number");
-
-                    String encryptedPhone = phoneNumber != null ? PiiEncryptionHelper.encrypt(phoneNumber) : null;
-
-                    pstmt.setString(1, encryptedPhone);
-                    pstmt.setString(2, lessorId);  // UUID como String
-                    pstmt.addBatch();
-
-                    count++;
-                    if (count % BATCH_SIZE == 0) {
-                        pstmt.executeBatch();
-                        log.info("Procesados {} registros de lessors", count);
-                    }
-                }
-                pstmt.executeBatch();
-                log.info("Cifrado completado: {} registros de lessors cifrados", count);
+        // La PK de lessors es user_id (no id).
+        // Cada fila: [user_id, phone_number]
+        List<String[]> rows = new ArrayList<>();
+        String selectSql = "SELECT user_id, phone_number FROM lessors";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(selectSql)) {
+            while (rs.next()) {
+                rows.add(new String[]{
+                        rs.getString("user_id"),
+                        rs.getString("phone_number")
+                });
             }
         }
+
+        String updateSql = "UPDATE lessors SET phone_number = ? WHERE user_id = ?";
+        int count = 0;
+        try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
+            for (String[] row : rows) {
+                pstmt.setString(1, encryptNullable(row[1]));
+                pstmt.setString(2, row[0]);
+                pstmt.addBatch();
+
+                count++;
+                if (count % BATCH_SIZE == 0) {
+                    pstmt.executeBatch();
+                    log.info("Procesados {} registros de lessors", count);
+                }
+            }
+            pstmt.executeBatch();
+            log.info("Cifrado completado: {} registros de lessors cifrados", count);
+        }
+    }
+
+    private String encryptNullable(String value) {
+        return value != null ? PiiEncryptionHelper.encrypt(value) : null;
     }
 }
