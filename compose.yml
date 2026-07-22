@@ -32,6 +32,7 @@ services:
       - AWS_S3_BUCKET=${AWS_S3_BUCKET:-vivia-media-bucket}
       - AWS_SNS_REKOGNITION_ROLE_ARN=${AWS_SNS_REKOGNITION_ROLE_ARN}
       - AWS_REKOGNITION_SNS_TOPIC_ARN=${AWS_REKOGNITION_SNS_TOPIC_ARN}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     volumes:
       - ${FIREBASE_KEY_HOST_PATH:-/var/run/secrets/firebase-adminsdk.json}:/var/run/secrets/firebase-adminsdk.json:ro
     networks:
