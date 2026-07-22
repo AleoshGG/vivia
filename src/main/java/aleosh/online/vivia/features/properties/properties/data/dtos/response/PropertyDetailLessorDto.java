@@ -29,4 +29,7 @@ public class PropertyDetailLessorDto {
 
     @Schema(description = "URL de la foto de perfil")
     private String photoUrl;
+
+    @Schema(description = "Indica si el arrendador está verificado")
+    private boolean verified;
 }

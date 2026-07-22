@@ -14,6 +14,7 @@ import aleosh.online.vivia.features.properties.properties.data.entities.Property
 import aleosh.online.vivia.features.address.address.data.entities.AddressEntity;
 import aleosh.online.vivia.features.address.neighborhoods.data.entities.NeighborhoodEntity;
 import aleosh.online.vivia.features.users.lessor.data.entities.LessorEntity;
+import aleosh.online.vivia.features.users.lessor.domain.objectvalues.VerificationStatus;
 import aleosh.online.vivia.features.users.users.data.entities.UserEntity;
 import org.springframework.stereotype.Component;
 
@@ -123,6 +124,7 @@ public class PropertyDetailMapper {
                 .paternalSurname(user.getPaternalSurname())
                 .maternalSurname(user.getMaternalSurname())
                 .photoUrl(user.getPhotoUrl())
+                .verified(VerificationStatus.VERIFIED.equals(lessor.getVerificationStatus()))
                 .build();
     }
 
