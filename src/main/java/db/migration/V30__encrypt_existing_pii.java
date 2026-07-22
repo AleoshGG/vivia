@@ -55,7 +55,7 @@ public class V30__encrypt_existing_pii extends BaseJavaMigration {
             int count = 0;
             try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
                 while (rs.next()) {
-                    Object userId = rs.getObject("id");
+                    String userId = rs.getString("id");  // UUID como String
                     String name = rs.getString("name");
                     String paternalSurname = rs.getString("paternal_surname");
                     String maternalSurname = rs.getString("maternal_surname");
@@ -70,7 +70,7 @@ public class V30__encrypt_existing_pii extends BaseJavaMigration {
                     pstmt.setString(2, encryptedPaternal);
                     pstmt.setString(3, encryptedMaternal);
                     pstmt.setString(4, encryptedFcm);
-                    pstmt.setObject(5, userId);
+                    pstmt.setString(5, userId);  // UUID como String
                     pstmt.addBatch();
 
                     count++;
@@ -96,13 +96,13 @@ public class V30__encrypt_existing_pii extends BaseJavaMigration {
             int count = 0;
             try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
                 while (rs.next()) {
-                    Object lessorId = rs.getObject("id");
+                    String lessorId = rs.getString("id");  // UUID como String
                     String phoneNumber = rs.getString("phone_number");
 
                     String encryptedPhone = phoneNumber != null ? PiiEncryptionHelper.encrypt(phoneNumber) : null;
 
                     pstmt.setString(1, encryptedPhone);
-                    pstmt.setObject(2, lessorId);
+                    pstmt.setString(2, lessorId);  // UUID como String
                     pstmt.addBatch();
 
                     count++;
