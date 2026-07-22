@@ -34,14 +34,18 @@ import aleosh.online.vivia.features.properties.properties.domain.repositories.IP
 import aleosh.online.vivia.features.properties.properties.services.IPropertyService;
 import aleosh.online.vivia.features.properties.properties.services.mappers.PropertyDetailMapper;
 import aleosh.online.vivia.features.properties.properties.services.mappers.PropertyMapper;
+import aleosh.online.vivia.features.subscriptions.data.repositories.LessorSubscriptionRepository;
 import aleosh.online.vivia.features.users.lessee.services.ILesseeService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,6 +65,9 @@ public class PropertyServiceImpl implements IPropertyService {
     private final NeighborhoodRepository neighborhoodRepository;
     private final AmenityRepository amenityRepository;
     private final AddressMapper addressDataMapper;
+    private final LessorSubscriptionRepository lessorSubscriptionRepository;
+
+    private static final int PREMIUM_SUGGESTIONS_COUNT = 5;
 
     public PropertyServiceImpl(
             IPropertyRepository propertyRepository,
@@ -74,7 +81,8 @@ public class PropertyServiceImpl implements IPropertyService {
             PropertyTypeRepository propertyTypeRepository,
             NeighborhoodRepository neighborhoodRepository,
             AmenityRepository amenityRepository,
-            @Qualifier("addressDataMapper") AddressMapper addressDataMapper
+            @Qualifier("addressDataMapper") AddressMapper addressDataMapper,
+            LessorSubscriptionRepository lessorSubscriptionRepository
     ) {
         this.propertyRepository = propertyRepository;
         this.addressRepository = addressRepository;
@@ -88,6 +96,7 @@ public class PropertyServiceImpl implements IPropertyService {
         this.neighborhoodRepository = neighborhoodRepository;
         this.amenityRepository = amenityRepository;
         this.addressDataMapper = addressDataMapper;
+        this.lessorSubscriptionRepository = lessorSubscriptionRepository;
     }
 
     @Override
@@ -211,13 +220,29 @@ public class PropertyServiceImpl implements IPropertyService {
     @Override
     @Transactional(readOnly = true)
     public List<PropertyPreviewResponseDto> getSuggestions(Integer limit) {
-        Stream<PropertyPreviewResponseDto> stream = propertyJpaRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc()
-                .stream()
-                .map(mapper::toPreviewDto);
+        List<PropertyEntity> all = propertyJpaRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc();
+
+        Set<UUID> premiumLessorIds = new HashSet<>(
+                lessorSubscriptionRepository.findActivePremiumUserIds(OffsetDateTime.now()));
+
+        List<PropertyEntity> premiumTop = all.stream()
+                .filter(p -> p.getLessor() != null && premiumLessorIds.contains(p.getLessor().getId()))
+                .limit(PREMIUM_SUGGESTIONS_COUNT)
+                .toList();
+
+        Set<UUID> promotedIds = premiumTop.stream()
+                .map(PropertyEntity::getId)
+                .collect(Collectors.toSet());
+
+        Stream<PropertyEntity> rest = all.stream()
+                .filter(p -> !promotedIds.contains(p.getId()));
         if (limit != null) {
-            stream = stream.limit(limit);
+            rest = rest.limit(limit);
         }
-        return stream.collect(Collectors.toList());
+
+        return Stream.concat(premiumTop.stream(), rest)
+                .map(mapper::toPreviewDto)
+                .collect(Collectors.toList());
     }
 
     @Override
