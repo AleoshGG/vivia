@@ -5,6 +5,6 @@ import org.springframework.http.HttpStatus;
 
 public class PremiumRequiredException extends DomainException {
     public PremiumRequiredException(String message) {
-        super(message, HttpStatus.FORBIDDEN);
+        super(message, HttpStatus.PAYMENT_REQUIRED);
     }
 }

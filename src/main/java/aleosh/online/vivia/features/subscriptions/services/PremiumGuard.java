@@ -25,7 +25,7 @@ public class PremiumGuard {
     }
 
     /**
-     * Lanza PremiumRequiredException (403) si el lessor ya alcanzó su límite gratuito.
+     * Lanza PremiumRequiredException (402) si el lessor ya alcanzó su límite gratuito.
      * Excluye propiedades con soft-delete para no penalizar por veredictos de reportes.
      */
     public void assertCanPublishProperty(UUID lessorId) {

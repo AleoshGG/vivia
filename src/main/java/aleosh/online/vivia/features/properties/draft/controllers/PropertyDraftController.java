@@ -57,4 +57,24 @@ public class PropertyDraftController {
                 HttpStatus.CREATED
         ).buildResponseEntity();
     }
+
+    @Operation(
+            summary = "Check property publish eligibility",
+            description = "Pre-check antes de abrir el formulario de publicación. Responde 200 si el " +
+                    "lessor puede publicar; 402 si es free y alcanzó su límite (debe suscribirse).",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/posts")
+    public ResponseEntity<BaseResponse<Void>> checkCanPublish(Authentication authentication) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        premiumGuard.assertCanPublishProperty(userDetails.getUserId());
+
+        return new BaseResponse<Void>(
+                true,
+                null,
+                "Puedes publicar una nueva propiedad.",
+                HttpStatus.OK
+        ).buildResponseEntity();
+    }
 }
